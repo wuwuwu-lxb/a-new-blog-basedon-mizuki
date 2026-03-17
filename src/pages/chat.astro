@@ -1,5 +1,5 @@
 ---
-import ChatBox from "../components/widget/ChatBox.svelte";
+import WebChat from "../components/widget/WebChat.svelte";
 import MainGridLayout from "../layouts/MainGridLayout.astro";
 import { siteConfig } from "@/config";
 
@@ -7,11 +7,6 @@ const title = "Chat";
 ---
 
 <MainGridLayout title={title}>
-    <!-- 引入右侧边栏布局管理器 -->
-    <script>
-        import('../scripts/right-sidebar-layout.js');
-    </script>
-
     <div class="flex w-full rounded-(--radius-large) overflow-hidden relative min-h-32">
         <div class="card-base z-10 px-9 py-6 relative w-full">
             <!-- 页面标题 -->
@@ -24,8 +19,8 @@ const title = "Chat";
                 <p class="text-50 ml-6">和 Mizuki 聊聊天吧 ~</p>
             </div>
 
-            <!-- 聊天框组件 -->
-            <ChatBox client:idle />
+            <!-- 聊天框组件 - 使用嵌入页面的完整聊天框 -->
+            <WebChat client:idle />
         </div>
     </div>
 </MainGridLayout>
