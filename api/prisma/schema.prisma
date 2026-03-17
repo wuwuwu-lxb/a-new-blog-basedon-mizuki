@@ -1,0 +1,155 @@
+// Prisma Schema for Mizuki Blog API
+// https://www.prisma.io/docs/concepts/components/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 用户模型
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  password  String   // bcrypt 加密后的密码
+  role      Role     @default(USER)
+  avatar    String?
+  bio       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  articles Article[]
+  comments Comment[]
+
+  @@map("users")
+}
+
+// 用户角色枚举
+enum Role {
+  USER
+  ADMIN
+}
+
+// 文章模型
+model Article {
+  id          Int      @id @default(autoincrement())
+  title       String
+  slug        String   @unique
+  content     String
+  excerpt     String?
+  cover       String?
+  published   Boolean  @default(false)
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  publishedAt DateTime?
+
+  authorId   Int
+  author     User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  tags       Tag[]
+  categories Category[]
+  comments   Comment[]
+
+  @@map("articles")
+}
+
+// 分类模型
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  articles Article[]
+
+  @@map("categories")
+}
+
+// 标签模型
+model Tag {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  articles Article[]
+
+  @@map("tags")
+}
+
+// 评论模型
+model Comment {
+  id        Int      @id @default(autoincrement())
+  content   String
+  status    CommentStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  authorId Int?
+  author   User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  // 游客评论信息
+  guestName  String?
+  guestEmail String?
+  guestUrl   String?
+
+  // 文章关联（可以是数据库文章或 slug）
+  articleId Int?
+  article   Article?   @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  articleSlug String?  // 用于 Astro 内容集合的文章 slug
+
+  // 嵌套回复
+  parentId Int?
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Comment[] @relation("CommentReplies")
+
+  @@unique([articleId, articleSlug]) // 确保每篇文章只有一个评论线程
+  @@map("comments")
+}
+
+// 评论状态枚举
+enum CommentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SPAM
+}
+
+// 聊天会话模型
+model ChatSession {
+  id        Int      @id @default(autoincrement())
+  sessionId String   @unique
+  title     String?
+  messages  Message[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("chat_sessions")
+}
+
+// 聊天消息模型
+model Message {
+  id         Int           @id @default(autoincrement())
+  role       MessageRole
+  content    String
+  tokenCount Int?
+  createdAt  DateTime      @default(now())
+
+  sessionId  Int
+  session    ChatSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+// 消息角色枚举
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}

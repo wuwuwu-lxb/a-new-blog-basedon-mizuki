@@ -291,6 +291,7 @@ export const zh_TW: Translation = {
 	[Key.siteStatsCategoryCount]: "分類",
 	[Key.siteStatsTagCount]: "標籤",
 	[Key.siteStatsTotalWords]: "總字數",
+	[Key.siteStatsTotalViews]: "總瀏覽量",
 	[Key.siteStatsRunningDays]: "運行天數",
 	[Key.siteStatsLastUpdate]: "最後活動",
 	[Key.siteStatsDaysAgo]: "{days} 天前",

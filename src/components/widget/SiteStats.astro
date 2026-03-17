@@ -3,6 +3,8 @@ import { Icon } from "astro-icon/components";
 import { siteConfig } from "../../config";
 import I18nKey from "../../i18n/i18nKey";
 import { i18n } from "../../i18n/translation";
+import path from "node:path";
+import fs from "node:fs/promises";
 import {
 	getCategoryList,
 	getSortedPosts,
@@ -24,6 +26,23 @@ const siteStartDate = siteConfig.siteStartDate || "2025-01-01";
 const posts = await getSortedPosts();
 const categories = await getCategoryList();
 const tags = await getTagList();
+
+// 获取浏览量缓存
+let viewsCache: Record<string, number> = {};
+try {
+	const viewsCacheFile = path.join(process.cwd(), '.views-cache.json');
+	const cacheContent = await fs.readFile(viewsCacheFile, 'utf-8');
+	viewsCache = JSON.parse(cacheContent);
+} catch {
+	viewsCache = {};
+}
+
+// 计算总浏览量
+let totalViews = 0;
+for (const post of posts) {
+	const slug = post.id.replace(/\.md$/, '');
+	totalViews += viewsCache[slug] || 0;
+}
 
 // 计算总字数
 let totalWords = 0;
@@ -90,6 +109,12 @@ const stats = [
 		icon: "material-symbols:text-ad-outline-rounded",
 		label: i18n(I18nKey.siteStatsTotalWords),
 		value: totalWords,
+		formatted: true,
+	},
+	{
+		icon: "material-symbols:visibility-outline-rounded",
+		label: i18n(I18nKey.siteStatsTotalViews),
+		value: totalViews,
 		formatted: true,
 	},
 	{

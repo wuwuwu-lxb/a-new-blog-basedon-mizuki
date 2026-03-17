@@ -1,0 +1,38 @@
+---
+import ChatBox from "../components/widget/ChatBox.svelte";
+import MainGridLayout from "../layouts/MainGridLayout.astro";
+import { siteConfig } from "@/config";
+
+const title = "Chat";
+---
+
+<MainGridLayout title={title}>
+    <!-- 引入右侧边栏布局管理器 -->
+    <script>
+        import('../scripts/right-sidebar-layout.js');
+    </script>
+
+    <div class="flex w-full rounded-(--radius-large) overflow-hidden relative min-h-32">
+        <div class="card-base z-10 px-9 py-6 relative w-full">
+            <!-- 页面标题 -->
+            <div class="flex flex-col items-start justify-center mb-8">
+                <h1 class="text-4xl font-bold text-90 mb-2 relative
+                          before:w-1 before:h-8 before:rounded-md before:bg-(--primary)
+                          before:absolute before:top-1/2 before:-translate-y-1/2 before:-left-4">
+                    Mizuki Chat
+                </h1>
+                <p class="text-50 ml-6">和 Mizuki 聊聊天吧 ~</p>
+            </div>
+
+            <!-- 聊天框组件 -->
+            <ChatBox client:idle />
+        </div>
+    </div>
+</MainGridLayout>
+
+<style>
+    /* 聊天页面容器样式 */
+    :global(.chat-page-container) {
+        min-height: calc(100vh - 400px);
+    }
+</style>

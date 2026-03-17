@@ -1,3 +1,4 @@
+import node from "@astrojs/node";
 import sitemap from "@astrojs/sitemap";
 import svelte, { vitePreprocess } from "@astrojs/svelte";
 import tailwindcss from "@tailwindcss/vite";
@@ -33,9 +34,11 @@ import { remarkFixGithubAdmonitions } from "./src/plugins/remark-fix-github-admo
 export default defineConfig({
 	site: siteConfig.siteURL,
 	base: "/",
-	trailingSlash: "always",
+	trailingSlash: "ignore",
 
-	output: "static",
+	output: "server",
+
+	adapter: node({ mode: "standalone" }),
 
 	integrations: [
 		umami({
@@ -176,6 +179,18 @@ export default defineConfig({
 	},
 	vite: {
 		plugins: [tailwindcss()],
+		server: {
+			// 开发环境下代理 API 请求到 Next.js 服务
+			// 注意：Astro 自己的 API 路由 (src/pages/api/) 会自动处理，不需要代理
+			// 只有明确指定的 API 路径才代理到 Next.js
+			proxy: {
+				// 只代理特定的 API 路径到 Next.js
+				'/api/v1': {
+					target: 'http://localhost:3001',
+					changeOrigin: true,
+				},
+			},
+		},
 		build: {
 			// 静态资源处理优化，防止小图片转 base64 导致 HTML 体积过大（可选，根据需要调整）
 			assetsInlineLimit: 4096,

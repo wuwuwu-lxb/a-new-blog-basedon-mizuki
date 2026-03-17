@@ -2,17 +2,17 @@
 import type { CollectionEntry } from "astro:content";
 import { commentConfig } from "@/config";
 import { removeFileExtension } from "@/utils/url-utils";
-import Twikoo from "./Twikoo.astro";
+import CommentsPanel from "./CommentsPanel.svelte";
 
 interface Props {
 	post: CollectionEntry<"posts">;
 }
 
 const { id, data } = Astro.props.post;
-
 const slug = removeFileExtension(id);
-const path = `/posts/${slug}`;
-// const url = `${Astro.site?.href}${path}`;
+
+// 使用文章 slug 作为评论标识
+const commentSlug = slug;
 
 let commentService = "";
 if (commentConfig?.enable && commentConfig?.twikoo) {
@@ -23,7 +23,7 @@ const commentEnabled = data.comment ?? true;
 ---
 {commentConfig?.enable && commentEnabled && (
   <div class="card-base p-6 mb-4">
-    {commentService === 'twikoo' && <Twikoo path={path} />}
-    {commentService === '' && null}
+    <!-- API 评论系统 -->
+    <CommentsPanel client:only="svelte" commentSlug={commentSlug} />
   </div>
 )}

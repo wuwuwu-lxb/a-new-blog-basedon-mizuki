@@ -1,5 +1,4 @@
 ---
-import type { GetStaticPaths } from "astro";
 import Pagination from "../components/control/Pagination.astro";
 import PostPage from "../components/PostPage.astro";
 import { PAGE_SIZE } from "../constants/constants";
@@ -7,15 +6,58 @@ import MainGridLayout from "../layouts/MainGridLayout.astro";
 import { getSortedPosts } from "../utils/content-utils";
 import { initPostIdMap } from "../utils/permalink-utils";
 
-export const getStaticPaths = (async ({ paginate }) => {
-	const allBlogPosts = await getSortedPosts();
-	// 初始化文章 ID 映射（用于 permalink 功能）
-	initPostIdMap(allBlogPosts);
-	return paginate(allBlogPosts, { pageSize: PAGE_SIZE });
-}) satisfies GetStaticPaths;
-// https://github.com/withastro/astro/issues/6507#issuecomment-1489916992
+// 使用 prerender = true 生成静态页面供 Pagefind 索引
+export const prerender = true;
 
-const { page } = Astro.props;
+// 生成分页路径
+export async function getStaticPaths() {
+	const allBlogPosts = await getSortedPosts();
+	const totalPages = Math.ceil(allBlogPosts.length / PAGE_SIZE);
+
+	// 生成所有分页路径
+	const paths = [];
+	for (let i = 1; i <= totalPages; i++) {
+		paths.push({
+			params: { page: i === 1 ? undefined : String(i) },
+			props: { allBlogPosts, totalPages, currentPage: i },
+		});
+	}
+
+	return paths;
+}
+
+// 获取所有文章
+const allBlogPosts = Astro.props.allBlogPosts || await getSortedPosts();
+const totalPages = Astro.props.totalPages || Math.ceil(allBlogPosts.length / PAGE_SIZE);
+const currentPageNum = Astro.props.currentPage || 1;
+
+// 初始化文章 ID 映射（用于 permalink 功能）
+initPostIdMap(allBlogPosts);
+
+// 页码验证
+if (currentPageNum < 1 || currentPageNum > totalPages) {
+    return Astro.redirect('/404');
+}
+
+const startIndex = (currentPageNum - 1) * PAGE_SIZE;
+const endIndex = startIndex + PAGE_SIZE;
+const pageData = allBlogPosts.slice(startIndex, endIndex);
+
+// 构建分页 URL
+const currentUrl = currentPageNum <= 1 ? '/' : `/${currentPageNum}`;
+const nextUrl = currentPageNum < totalPages ? `/${currentPageNum + 1}` : null;
+const prevUrl = currentPageNum > 1 ? `/${currentPageNum - 1}` : null;
+
+const page = {
+    data: pageData,
+    currentPage: currentPageNum,
+    lastPage: totalPages,
+    url: {
+        current: currentUrl,
+        next: nextUrl,
+        prev: prevUrl
+    }
+};
 
 const len = page.data.length;
 ---

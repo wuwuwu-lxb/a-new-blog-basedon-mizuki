@@ -1,370 +1,451 @@
-# 🌸 Mizuki
-<img align='right' src='logo.png' width='200px' alt="Mizuki logo">
+# 🌸 Mizuki 个人博客
 
-一个现代化、功能丰富的静态博客模板，基于 [Astro](https://astro.build) 构建，具有先进的功能和精美的设计。
+一个基于 **Astro + Svelte** 的现代化个人博客系统，集成用户认证、评论系统、管理后台等功能。
 
-[![Node.js >= 20](https://img.shields.io/badge/node.js-%3E%3D20-brightgreen)](https://nodejs.org/)
+[![Node.js >= 20](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org/)
 [![pnpm >= 9](https://img.shields.io/badge/pnpm-%3E%3D9-blue)](https://pnpm.io/)
-[![Astro](https://img.shields.io/badge/Astro-5.15.3-orange)](https://astro.build/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9.2-blue)](https://www.typescriptlang.org/)
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg?logo=apache)](https://opensource.org/licenses/Apache-2.0)
+[![Astro](https://img.shields.io/badge/Astro-6.0.4-orange)](https://astro.build/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
 
-[**🖥️ 在线演示**](https://mizuki.mysqil.com/) | [**📝 用户文档**](https://docs.mizuki.mysqil.com/)
-
-🌏 **README 语言:**
-[**English**](./README.md) / [**中文**](./README.zh.md) / [**日本語**](./README.ja.md) / [**中文繁体**](./README.tw.md) /
-
-通过我们的综合文档快速开始。无论是自定义主题、配置功能，还是部署到生产环境，文档涵盖了您成功启动博客所需的所有内容。
-
-[📚 阅读完整文档](https://docs.mizuki.mysqil.com/) →
-
-![Mizuki Preview](./README.webp)
-
-<table>
-  <tr>
-    <td><img alt="" src="docs/image/1.webp"></td>
-    <td><img alt="" src="docs/image/2.webp"></td>
-    <td><img alt="" src="docs/image/3.webp"></td>
-  <tr>
-  <tr>
-    <td><img alt="" src="docs/image/4.webp"></td>
-    <td><img alt="" src="docs/image/5.webp"></td>
-    <td><img alt="" src="docs/image/6.webp"></td>
-  <tr>
-</table>
-
-## 🚀 NEW: 自动分辨率适配
-
-> **🎯 自动分辨率算法** - 智能适配内容布局基于设备屏幕分辨率，为所有设备提供最佳观看体验
-
-🌏 README 语言
-[**English**](./README.md) /
-[**中文**](./README.zh.md) /
-[**日本語**](./README.ja.md) /
-[**中文繁体**](./README.tw.md) /
-
-
-
-### 🔧 组件配置系统重构
-- **统一配置架构：** 全新的模块化组件配置体系，支持动态组件管理和顺序配置
-- **配置驱动的组件加载：** 重构 SideBar 组件，实现完全基于配置的组件加载机制
-- **统一控制开关：** 移除音乐播放器和公告组件的独立 enable 开关，统一由 sidebarLayoutConfig 控制
-- **响应式布局适配：** 组件支持响应式布局，可根据设备类型自动调整显示
-
-### 📐 布局系统优化
-- **侧边栏位置动态调整：** 支持左右侧边栏切换，布局自动适配
-- **文章目录智能定位：** 当侧边栏在右侧时，文章导航自动移至左侧，提供更好的阅读体验
-- **网格布局改进：** 优化 CSS Grid 布局，解决容器宽度异常问题
-
-### 🎛️ 配置文件格式标准化
-- **标准化配置格式：** 创建统一的组件配置文件格式规范
-- **类型安全：** 完善的 TypeScript 类型定义，确保配置的类型安全
-- **可扩展性：** 支持自定义组件类型和配置选项
-
-### 🧹 代码优化
-- **测试文件清理：** 移除未使用的测试配置和依赖，减少项目体积
-- **代码结构优化：** 改进组件架构，提升代码可维护性
-- **性能提升：** 优化组件加载逻辑，提升页面渲染性能
+[📖 English Documentation](README.md)
 
 ---
 
-## ✨ 功能特性
+## 📋 目录
 
-### 🎨 设计与界面
-- [x] 基于 [Astro](https://astro.build) 和 [Tailwind CSS](https://tailwindcss.com) 构建
-- [x] 使用 [Swup](https://swup.js.org/) 实现流畅的动画和页面过渡
-- [x] 明暗主题切换，支持系统偏好检测
-- [x] 可自定义主题色彩和动态横幅轮播
-- [x] 全屏背景图片，支持轮播、透明度和模糊效果
-- [x] 全设备响应式设计
-- [x] 使用 JetBrains Mono 字体的优美排版
+1. [快速开始](#-快速开始)
+2. [项目架构](#-项目架构)
+3. [目录结构](#-目录结构)
+4. [配置说明](#-配置说明)
+5. [开发指南](#-开发指南)
+6. [部署指南](#-部署指南)
+7. [常见问题](#-常见问题)
 
-### 🔍 内容与搜索
-- [x] 基于 [Pagefind](https://pagefind.app/) 的高级搜索功能
-- [x] [增强的 Markdown 功能](#-markdown-扩展语法)，支持语法高亮
-- [x] 交互式目录，支持自动滚动
-- [x] RSS 订阅生成
-- [x] 阅读时间估算
-- [x] 文章分类和标签系统
-
-
-
-### 📱 特色页面
-- [x] **追番页面** - 追踪动画观看进度和评分
-- [x] **友链页面** - 精美卡片展示朋友网站
-- [x] **日记页面** - 分享生活瞬间，类似社交媒体
-- [x] **归档页面** - 有序的文章时间线视图
-- [x] **关于页面** - 可自定义的个人介绍
-
-### 🛠 技术特性
-- [x] **增强代码块**，基于 [Expressive Code](https://expressive-code.com/)
-- [x] **数学公式支持**，KaTeX 渲染
-- [x] **图片优化**，PhotoSwipe 画廊集成
-- [x] **SEO 优化**，包含站点地图和元标签
-- [x] **性能优化**，懒加载和缓存机制
-- [x] **评论系统**，支持 Twikoo 集成
+---
 
 ## 🚀 快速开始
 
-### 📦 安装
+### 前置要求
 
-1. **克隆仓库：**
-   ```bash
-   git clone https://github.com/matsuzaka-yuki/mizuki.git
-   cd mizuki
-   ```
+| 软件 | 版本要求 | 说明 |
+|------|---------|------|
+| Node.js | >= 20.x | [下载地址](https://nodejs.org/) |
+| pnpm | >= 9.x | `npm install -g pnpm` |
 
-2. **安装依赖：**
-   ```bash
-   # 如果没有安装 pnpm，先安装
-   npm install -g pnpm
-   
-   # 安装项目依赖
-   pnpm install
-   ```
+### 1. 克隆项目
 
-3. **配置博客：**
-   - 编辑 `src/config.ts` 自定义博客设置
-   - 更新站点信息、主题色彩、横幅图片和社交链接
-   - 配置特色页面功能
-   - (可选) 配置内容仓库分离 - 见 [内容仓库配置](#-代码内容分离可选)
+```bash
+git clone <your-repo-url>
+cd Mizuki
+```
 
-4. **启动开发服务器：**
-   ```bash
-   pnpm dev
-   ```
-   博客将在 `http://localhost:4321` 可用
+### 2. 安装依赖
 
-### 📝 内容管理
+```bash
+pnpm install
+```
 
-- **创建新文章：** `pnpm new-post <文件名>`
-- **编辑文章：** 修改 `src/content/posts/` 中的文件
-- **自定义页面：** 编辑 `src/content/spec/` 中的特殊页面
-- **添加图片：** 将图片放在 `src/assets/` 或 `public/` 中
+### 3. 初始化数据库
 
-### 🚀 部署
+```bash
+pnpm init-db
+```
 
-将博客部署到任何静态托管平台：
+此命令会：
+- 在 `prisma/` 目录下创建 SQLite 数据库
+- 初始化必要的表结构（用户、文章、评论等）
 
-- **Vercel：** 连接 GitHub 仓库到 Vercel
-- **Netlify：** 直接从 GitHub 部署
-- **GitHub Pages：** 使用包含的 GitHub Actions 工作流
-- **Cloudflare Pages：** 连接您的仓库
+> **注意**：数据库文件已添加到 `.gitignore`，不会被提交到 Git 仓库。
 
-- **环境变量配置（可选）：** 可参照 `.env.example` 来配置
+### 4. 启动开发服务器
 
-部署前，请在 `src/config.ts` 中更新 `siteURL`。
-**不建议**将 `.env` 文件提交到 Git，`.env` 应该仅在本地调试或构建使用。若要将项目在云平台部署，建议通过平台上的 `环境变量` 配置传入。
+```bash
+pnpm dev
+```
 
-## 📝 文章前言格式
+访问 `http://localhost:4321` 查看博客。
 
-```yaml
 ---
-title: 我的第一篇博客文章
-published: 2023-09-09
-description: 这是我新博客的第一篇文章。
-image: ./cover.jpg
-tags: [标签1, 标签2]
-category: 前端
-draft: false
-pinned: false
-comment: true
-lang: zh-CN      # 仅当文章语言与 config.ts 中的站点语言不同时设置
+
+## 🏗️ 项目架构
+
+### 技术栈
+
+| 层级 | 技术 | 说明 |
+|------|------|------|
+| **框架** | Astro 6.0.4 | 静态站点生成 + SSR 混合渲染 |
+| **UI** | Svelte 5 | 响应式组件 |
+| **样式** | TailwindCSS 4 | 原子化 CSS |
+| **数据库** | SQLite + Prisma | 轻量级数据持久化 |
+| **认证** | JWT | JSON Web Token 鉴权 |
+| **搜索** | Pagefind | 静态全文搜索 |
+
+### 渲染模式
+
+项目采用 **混合渲染模式**：
+
+| 页面类型 | 渲染方式 | 说明 |
+|---------|---------|------|
+| 首页/列表页 | 预渲染 (Prerender) | 构建时生成静态 HTML |
+| 文章详情页 | 预渲染 (Prerender) | 构建时生成静态 HTML |
+| 管理后台 | SSR | 运行时动态渲染 |
+| API 接口 | SSR | 运行时处理请求 |
+
+### 核心功能模块
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Mizuki Blog System                      │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │  博客前端   │  │  管理后台   │  │   API 服务层          │  │
+│  │  Astro SSR  │  │  Svelte 5   │  │  Astro API Routes   │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+│                           │                                  │
+│                    ┌──────▼──────┐                          │
+│                    │   Prisma    │                          │
+│                    │    ORM      │                          │
+│                    └──────┬──────┘                          │
+│                           │                                  │
+│                    ┌──────▼──────┐                          │
+│                    │   SQLite    │                          │
+│                    │   Database  │                          │
+│                    └─────────────┘                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
 ---
+
+## 📁 目录结构
+
+```
+Mizuki/
+├── src/
+│   ├── components/        # 前端组件
+│   │   ├── admin/         # 管理后台组件
+│   │   ├── control/       # 控制类组件（分页、标签等）
+│   │   ├── misc/          # 通用组件
+│   │   ├── widget/        # 功能组件（搜索、音乐播放器等）
+│   │   └── comment/       # 评论系统组件
+│   ├── config/            # 配置文件
+│   ├── content/           # 文章内容（Markdown 文件）
+│   ├── i18n/              # 国际化文件
+│   ├── layouts/           # 页面布局模板
+│   ├── lib/               # 工具库
+│   ├── middleware/        # 中间件
+│   ├── pages/             # 页面路由
+│   │   ├── admin/         # 管理后台页面
+│   │   ├── api/           # API 接口
+│   │   ├── auth/          # 认证相关页面
+│   │   └── posts/         # 文章页面
+│   ├── styles/            # 全局样式
+│   ├── types/             # TypeScript 类型定义
+│   ├── utils/             # 工具函数
+│   └── config.ts          # 主配置文件
+├── prisma/                # 数据库相关文件
+│   ├── schema.prisma      # 数据库模式定义
+│   └── dev.db             # SQLite 数据库文件（已忽略）
+├── public/                # 静态资源
+│   ├── pagefind/          # Pagefind 搜索索引（构建生成）
+│   └── assets/            # 图片、字体等资源
+├── scripts/               # 构建脚本
+├── docs/                  # 项目文档
+├── dist/                  # 构建输出目录（已忽略）
+├── node_modules/          # 依赖包（已忽略）
+├── .env                   # 环境变量文件（已忽略）
+├── .env.example           # 环境变量示例
+├── astro.config.mjs       # Astro 配置
+├── package.json           # 项目配置和脚本
+├── pnpm-lock.yaml         # 依赖锁定文件
+├── tsconfig.json          # TypeScript 配置
+└── README.md              # 项目说明文档
 ```
 
-### Frontmatter 字段说明
+---
 
-- **title**: 文章标题（必需）
-- **published**: 发布日期（必需）
-- **description**: 文章描述，用于 SEO 和预览
-- **image**: 封面图片路径（相对于文章文件）
-- **tags**: 标签数组，用于分类
-- **category**: 文章分类
-- **draft**: 设置为 `true` 在生产环境中隐藏文章
-- **pinned**: 设置为 `true` 将文章置顶
-- **comment**: 设置为 `true` 启用文章评论区（需全局启用评论功能）
-- **lang**: 文章语言（仅当与站点默认语言不同时设置）
+## ⚙️ 配置说明
 
-### 置顶文章功能
-
-`pinned` 字段允许您将重要文章置顶到博客列表的顶部。置顶文章将始终显示在普通文章之前，无论其发布日期如何。
-
-**使用方法：**
-```yaml
-pinned: true  # 将此文章置顶
-pinned: false # 普通文章（默认）
-```
-
-**排序规则：**
-1. 置顶文章优先显示，按发布日期排序（最新在前）
-2. 普通文章随后显示，按发布日期排序（最新在前）
-
-### 文章级评论控制
-
-`comment` 字段允许您单独控制每篇文章评论区的开启与关闭。
-
-**使用方法：**
-```yaml
-comment: true  # 启用评论（默认）
-comment: false # 禁用评论
-```
-
-**注意：**
-此功能需要先在 `src/config.ts` 中启用评论系统。
-
-## 🧩 Markdown 扩展语法
-
-Mizuki 支持超越标准 GitHub Flavored Markdown 的增强功能：
-
-### 📝 增强写作
-- **提示框：** 使用 `> [!NOTE]`、`> [!TIP]`、`> [!WARNING]` 等创建精美的标注框
-- **数学公式：** 使用 `$行内$` 和 `$$块级$$` 语法编写 LaTeX 数学公式
-- **代码高亮：** 高级语法高亮，支持行号和复制按钮
-- **GitHub 卡片：** 使用 `::github{repo="用户/仓库"}` 嵌入仓库卡片
-
-### 🎨 视觉元素
-- **图片画廊：** 自动 PhotoSwipe 集成，支持图片查看
-- **可折叠部分：** 创建可展开的内容块
-- **自定义组件：** 使用特殊指令增强内容
-
-### 📊 内容组织
-- **目录：** 从标题自动生成，支持平滑滚动
-- **阅读时间：** 自动计算和显示
-- **文章元数据：** 丰富的前言支持，包含分类和标签
-
-## ⚡ 命令
-
-所有命令都在项目根目录运行：
-
-| 命令                       | 操作                                    |
-|:---------------------------|:---------------------------------------|
-| `pnpm install`             | 安装依赖                               |
-| `pnpm dev`                 | 在 `localhost:4321` 启动本地开发服务器 |
-| `pnpm build`               | 构建生产站点到 `./dist/`               |
-| `pnpm preview`             | 在部署前本地预览构建                   |
-| `pnpm check`               | 运行 Astro 错误检查                    |
-| `pnpm format`              | 使用 Prettier 格式化代码                  |
-| `pnpm lint`                | 检查并修复代码问题                     |
-| `pnpm new-post <文件名>`   | 创建新博客文章                         |
-| `pnpm astro ...`           | 运行 Astro CLI 命令                    |
-
-## 🎯 配置指南
-
-### 🔧 基础配置
-
-编辑 `src/config.ts` 自定义您的博客：
+### 1. 站点配置 (`src/config.ts`)
 
 ```typescript
-export const siteConfig: SiteConfig = {
-  title: "您的博客名称",
-  subtitle: "您的博客描述",
-  lang: "zh-CN", // 或 "en"、"ja" 等
-  themeColor: {
-    hue: 210, // 0-360，主题色调
-    fixed: false, // 隐藏主题色选择器
-  },
-  banner: {
-    enable: true,
-    src: ["assets/banner/1.webp"], // 横幅图片
-    carousel: {
-      enable: true,
-      interval: 0.8, // 秒
-    },
-  },
+export const siteConfig = {
+  title: "你的博客名称",        // 站点标题
+  subtitle: "博客副标题",       // 副标题
+  siteURL: "https://your.com", // 站点 URL（SEO 使用）
+  lang: "zh-CN",              // 语言
+  // ... 更多配置
+};
+
+export const profileConfig = {
+  name: "你的名字",           // 作者名
+  avatar: "/avatar.png",      // 头像路径
+  bio: "个人简介",            // 简介
 };
 ```
 
-### 📱 特色页面配置
+### 2. 环境变量 (`.env`)
 
-- **追番页面：** 在 `src/pages/anime.astro` 中编辑动画列表
-- **友链页面：** 在 `src/content/spec/friends.md` 中编辑朋友数据
-- **日记页面：** 在 `src/pages/diary.astro` 中编辑动态
-- **关于页面：** 在 `src/content/spec/about.md` 中编辑内容
-
-### 📦 代码内容分离 (可选)
-
-Mizuki 支持将代码和内容分成两个独立的仓库管理,适合团队协作和大型项目。
-
-**快速选择**:
-
-| 使用场景 | 配置方式 | 适合人群 |
-|---------|---------|---------|
-| 🆕 **本地模式** (默认) | 不配置,直接使用 | 新手、个人博客 |
-| 🔧 **分离模式** | 设置 `ENABLE_CONTENT_SYNC=true` | 团队协作、私有内容 |
-
-**一键启用/禁用**:
+复制 `.env.example` 为 `.env`：
 
 ```bash
-# 方式 1: 本地模式 (推荐新手)
-# 不创建 .env 文件,直接运行
-pnpm dev
-
-# 方式 2: 内容分离模式
-# 1. 复制配置文件
 cp .env.example .env
-
-# 2. 编辑 .env,启用内容分离
-ENABLE_CONTENT_SYNC=true
-CONTENT_REPO_URL=https://github.com/your-username/Mizuki-Content.git
-
-# 3. 同步内容
-pnpm run sync-content
 ```
 
-**功能特性**:
-- ✅ 支持公开和私有仓库 🔐
-- ✅ 一键启用/禁用,无需修改代码
-- ✅ 自动同步,开发前自动拉取最新内容
+主要配置项：
 
-📖 **详细配置**: [内容分离完整指南](docs/CONTENT_SEPARATION.md)  
-🔄 **迁移教程**: [从单仓库迁移到分离模式](docs/MIGRATION_GUIDE.md)  
-📚 **更多文档**: [文档索引](docs/README.md)
+```env
+# 内容仓库配置（可选）
+ENABLE_CONTENT_SYNC=false      # 是否启用内容分离
+CONTENT_REPO_URL=...           # 内容仓库 Git 地址
 
-## ✏️ 贡献
+# IndexNow SEO 配置（可选）
+INDEXNOW_KEY=your_key          # IndexNow API 密钥
+INDEXNOW_HOST=your.com         # 网站域名
 
-我们欢迎贡献！请随时提交问题和拉取请求。
+# Bilibili 配置（可选）
+BILI_SESSDATA=your_sessdata    # 获取观看进度用
+```
 
-1. Fork 仓库
-2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add some amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 打开拉取请求
+### 3. 数据库配置 (`prisma/schema.prisma`)
+
+```prisma
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+```
+
+---
+
+## 📝 开发指南
+
+### 常用命令
+
+| 命令 | 说明 |
+|------|------|
+| `pnpm install` | 安装依赖 |
+| `pnpm dev` | 启动开发服务器（端口 4321） |
+| `pnpm build` | 构建生产版本 |
+| `pnpm preview` | 预览构建结果 |
+| `pnpm init-db` | 初始化数据库 |
+| `pnpm new-post <文件名>` | 创建新文章 |
+| `pnpm format` | 格式化代码 |
+| `pnpm lint` | ESLint 检查 |
+
+### 创建新文章
+
+```bash
+pnpm new-post my-first-post
+```
+
+会在 `src/content/posts/my-first-post/` 目录下创建文章模板：
+
+```yaml
+---
+title: 文章标题
+published: 2024-01-01
+updated: 2024-01-02
+description: 文章描述
+tags: [标签 1, 标签 2]
+category: 分类名
+image: ./cover.webp      # 封面图
+draft: false             # 是否为草稿
+encrypted: false         # 是否加密
+---
+
+文章正文（支持 Markdown）
+```
+
+### 文章加密
+
+在文章 Frontmatter 中设置：
+
+```yaml
+---
+title: 加密文章
+encrypted: true
+password: your_password
+---
+```
+
+### 本地图片引用
+
+```markdown
+![图片描述](./image.png)
+```
+
+图片应放在文章同目录下。
+
+---
+
+## 🚀 部署指南
+
+### 生产构建
+
+```bash
+# 1. 构建
+pnpm build
+
+# 2. 预览
+pnpm preview
+```
+
+构建产物在 `dist/` 目录。
+
+### Vercel 部署
+
+1. 安装 Vercel CLI：
+```bash
+npm i -g vercel
+```
+
+2. 部署：
+```bash
+vercel
+```
+
+3. 生产发布：
+```bash
+vercel --prod
+```
+
+### Docker 部署
+
+```dockerfile
+FROM node:20-alpine
+
+WORKDIR /app
+
+# 安装 pnpm
+RUN npm install -g pnpm
+
+# 复制文件
+COPY . .
+
+# 安装依赖
+RUN pnpm install
+
+# 构建
+RUN pnpm build
+
+EXPOSE 4321
+
+CMD ["pnpm", "preview"]
+```
+
+### 服务器部署
+
+```bash
+# 1. 构建本地
+pnpm build
+
+# 2. 上传 dist 目录到服务器
+scp -r dist/* user@server:/var/www/mizuki
+
+# 3. 启动服务（使用 PM2 或 systemd）
+pm2 start dist/server/entry.mjs --name mizuki
+```
+
+---
+
+## 🔧 功能说明
+
+### 用户认证
+
+默认管理员账号：
+- 邮箱：`admin@mizuki.com`
+- 密码：`admin123`
+
+**请首次登录后立即修改密码！**
+
+### 管理后台
+
+访问 `/admin` 进入管理后台：
+- 文章管理：CRUD、分类标签
+- 评论管理：审核、删除
+- 用户管理：权限设置
+
+### 评论系统
+
+- 支持嵌套回复
+- 支持评论审核
+- 支持游客评论（可配置）
+
+### 搜索功能
+
+使用 Pagefind 静态搜索：
+- 全文索引
+- 高亮显示
+- 离线搜索
+
+**注意**：搜索功能仅在生产构建后可用。
+
+### 特色页面
+
+| 页面 | 路径 | 说明 |
+|------|------|------|
+| 追番页 | `/anime` | 动画观看记录 |
+| 友链页 | `/friends` | 友情链接 |
+| 时间线 | `/timeline` | 文章归档 |
+| 相册页 | `/albums` | 图片画廊 |
+
+---
+
+## ❓ 常见问题
+
+### 1. 搜索功能无法使用
+
+搜索功能需要生产构建后才能使用：
+
+```bash
+pnpm build
+pnpm preview
+```
+
+### 2. 数据库文件不存在
+
+运行初始化命令：
+
+```bash
+pnpm init-db
+```
+
+### 3. 端口被占用
+
+修改 `astro.config.mjs` 中的端口配置，或杀死占用端口的进程：
+
+```bash
+# 杀死占用 4321 端口的进程
+lsof -ti:4321 | xargs kill -9
+```
+
+### 4. 文章修改后不更新
+
+Astro 开发服务器会自动监听文件变化。如无生效：
+1. 重启开发服务器
+2. 清除 `.astro/` 缓存目录
+
+### 5. 构建失败
+
+尝试以下步骤：
+1. 清除依赖：`rm -rf node_modules pnpm-lock.yaml`
+2. 重新安装：`pnpm install`
+3. 清理缓存：`pnpm store prune`
+4. 重新构建：`pnpm build`
+
+---
 
 ## 📄 许可证
 
-本项目基于 Apache 许可证 2.0 - 查看 [LICENSE](LICENSE) 文件了解详情。
+Apache License 2.0
 
-### 原始项目许可证
-
-本项目基于 [Fuwari](https://github.com/saicaca/fuwari) 开发，该项目使用 MIT 许可证。根据 MIT 许可证要求，原始版权声明和许可声明已包含在 LICENSE.MIT 文件中。
+---
 
 ## 🙏 致谢
 
-- 基于原始 [Fuwari](https://github.com/saicaca/fuwari) 模板
-- 灵感来源于 [Yukina](https://github.com/WhitePaper233/yukina) - 一个美丽优雅的博客模板
-- 部分设计灵感来源于 [Firefly](https://github.com/CuteLeaf/Firefly) 和 [Twilight](https://github.com/spr-aachen/Twilight) 模板
-- 使用 [Pio](https://github.com/Dreamer-Paul/Pio) 实现可爱的 Live2D 看板娘插件
-- 使用 [Astro](https://astro.build) 和 [Tailwind CSS](https://tailwindcss.com) 构建
-- 图标来自 [Iconify](https://iconify.design/)
+- 前端模板：[**Mizuki**](https://github.com/matsuzaka-yuki/Mizuki)
+- 基于 [**Fuwari**](https://github.com/saicaca/fuwari) 二次开发
 
-### 🌸 特别感谢
-- **[Fuwari](https://github.com/saicaca/fuwari)** by saicaca - 本项目所基于的原始模板。感谢您创建了如此漂亮且功能强大的模板。
-- **[Yukina](https://github.com/WhitePaper233/yukina)** - 感谢提供设计灵感和创意，帮助塑造了这个项目。Yukina 是一个优雅的博客模板，展现了出色的设计原则和用户体验。
-- **[Firefly](https://github.com/CuteLeaf/Firefly)** - 感谢提供优秀的布局设计思路，双侧边栏布局、文章双列网格等布局，及部分小组件的设计与实现，让 Mizuki 的界面更加丰富。
-- **[Twilight](https://github.com/spr-aachen/Twilight)** - 感谢提供灵感和技术支持。Twilight 的动态壁纸模式切换系统、响应式设计和过渡效果显著提升了 Mizuki 的使用体验。
-
-## 🍀 贡献者
-
-感谢以下贡献者对本项目做出的贡献，如有问题或建议，请提交 [Issue](https://github.com/matsuzaka-yuki/Mizuki/issues) 或 [Pull Request](https://github.com/matsuzaka-yuki/Mizuki/pulls)。
-
-<a href="https://github.com/matsuzaka-yuki/Mizuki/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=matsuzaka-yuki/Mizuki" />
-</a>
-
-## ⭐ Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=matsuzaka-yuki/Mizuki&type=Date)](https://star-history.com/#matsuzaka-yuki/Mizuki&Date)
 ---
 
-⭐ 如果您觉得这个项目有帮助，请考虑给它一个星标!
+⭐ 如果觉得项目有用，欢迎给个 Star！

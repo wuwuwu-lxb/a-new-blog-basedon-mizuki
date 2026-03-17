@@ -1,0 +1,17 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import ArticleList from '../../../components/admin/ArticleList.svelte';
+---
+
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>文章管理 - Mizuki</title>
+	</head>
+	<body>
+		<Layout>
+			<ArticleList client:load />
+		</Layout>
+	</body>
+</html>

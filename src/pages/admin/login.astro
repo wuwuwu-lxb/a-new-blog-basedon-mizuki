@@ -1,0 +1,200 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>管理员登录 - Mizuki</title>
+	</head>
+	<body>
+		<Layout>
+			<div class="login-container">
+				<div class="login-card">
+					<h1>📝 管理后台</h1>
+					<p class="subtitle">Mizuki 文章管理系统</p>
+
+					<form id="loginForm">
+						<div class="form-group">
+							<label for="email">邮箱</label>
+							<input
+								type="email"
+								id="email"
+								name="email"
+								value="admin@mizuki.com"
+								placeholder="请输入邮箱"
+								required
+							/>
+						</div>
+
+						<div class="form-group">
+							<label for="password">密码</label>
+							<input
+								type="password"
+								id="password"
+								name="password"
+								value="admin123"
+								placeholder="请输入密码"
+								required
+							/>
+						</div>
+
+						<div id="errorMessage" class="error-message" style="display: none;"></div>
+
+						<button type="submit" class="login-btn" id="submitBtn">
+							登录
+						</button>
+					</form>
+
+					<p class="hint">默认管理员：admin@mizuki.com / admin123</p>
+				</div>
+			</div>
+		</Layout>
+
+		<script>
+			const form = document.getElementById('loginForm');
+			const errorMessage = document.getElementById('errorMessage');
+			const submitBtn = document.getElementById('submitBtn');
+
+			form?.addEventListener('submit', async (e) => {
+				e.preventDefault();
+
+				const email = document.getElementById('email').value;
+				const password = document.getElementById('password').value;
+
+				errorMessage.style.display = 'none';
+				submitBtn.disabled = true;
+				submitBtn.textContent = '登录中...';
+
+				try {
+					const res = await fetch('/api/auth/login', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ email, password }),
+					});
+
+					const data = await res.json();
+
+					if (res.ok) {
+						// 保存 token
+						localStorage.setItem('admin_token', data.token);
+						// 跳转到管理后台
+						window.location.href = '/admin/articles';
+					} else {
+						errorMessage.textContent = data.error || '登录失败';
+						errorMessage.style.display = 'block';
+						submitBtn.disabled = false;
+						submitBtn.textContent = '登录';
+					}
+				} catch (err) {
+					errorMessage.textContent = '网络错误，请稍后重试';
+					errorMessage.style.display = 'block';
+					submitBtn.disabled = false;
+					submitBtn.textContent = '登录';
+				}
+			});
+		</script>
+
+		<style>
+			.login-container {
+				min-height: calc(100vh - 200px);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				padding: 2rem;
+			}
+
+			.login-card {
+				background: var(--card-bg);
+				padding: 3rem;
+				border-radius: 1rem;
+				box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+				width: 100%;
+				max-width: 400px;
+			}
+
+			.login-card h1 {
+				text-align: center;
+				font-size: 1.75rem;
+				font-weight: 700;
+				color: var(--text-primary);
+				margin-bottom: 0.5rem;
+			}
+
+			.subtitle {
+				text-align: center;
+				color: var(--text-secondary);
+				margin-bottom: 2rem;
+				font-size: 0.875rem;
+			}
+
+			.form-group {
+				margin-bottom: 1.5rem;
+			}
+
+			.form-group label {
+				display: block;
+				margin-bottom: 0.5rem;
+				color: var(--text-primary);
+				font-weight: 500;
+				font-size: 0.875rem;
+			}
+
+			.form-group input {
+				width: 100%;
+				padding: 0.75rem;
+				border: 2px solid var(--border-color);
+				border-radius: 0.5rem;
+				font-size: 1rem;
+				box-sizing: border-box;
+				background: var(--bg);
+				color: var(--text-primary);
+				transition: border-color 0.2s;
+			}
+
+			.form-group input:focus {
+				outline: none;
+				border-color: #667eea;
+			}
+
+			.error-message {
+				background: #fee;
+				color: #c00;
+				padding: 0.75rem;
+				border-radius: 0.5rem;
+				margin-bottom: 1rem;
+				font-size: 0.875rem;
+			}
+
+			.login-btn {
+				width: 100%;
+				padding: 0.875rem;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				color: white;
+				border: none;
+				border-radius: 0.5rem;
+				font-size: 1rem;
+				font-weight: 600;
+				cursor: pointer;
+				transition: opacity 0.2s;
+			}
+
+			.login-btn:hover:not(:disabled) {
+				opacity: 0.9;
+			}
+
+			.login-btn:disabled {
+				opacity: 0.7;
+				cursor: not-allowed;
+			}
+
+			.hint {
+				margin-top: 1.5rem;
+				text-align: center;
+				color: var(--text-secondary);
+				font-size: 0.8rem;
+			}
+		</style>
+	</body>
+</html>

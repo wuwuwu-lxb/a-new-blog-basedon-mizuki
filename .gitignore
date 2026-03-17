@@ -47,3 +47,12 @@ src/data/bangumi-data.json
 
 # Bilibili generated data
 src/data/bilibili-data.json
+
+# database
+prisma/*.db
+prisma/*.db-journal
+*.db
+
+# cache
+.cache/
+.views-cache.json

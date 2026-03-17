@@ -2,6 +2,7 @@
 import type { CollectionEntry } from "astro:content";
 import { render } from "astro:content";
 import path from "node:path";
+import fs from "node:fs/promises";
 import Comment from "@components/comment/index.astro";
 import License from "@components/misc/License.astro";
 import Markdown from "@components/misc/Markdown.astro";
@@ -29,70 +30,56 @@ import { profileConfig, siteConfig } from "../../config";
 import { formatDateToYYYYMMDD } from "../../utils/date-utils";
 import Encryptor from "../../components/Encryptor.astro";
 
+// 在 Server 模式下，使用 getStaticPaths 生成静态页面供 Pagefind 索引
+// 同时保留 SSR 能力用于动态功能（如浏览统计）
+export const prerender = true;
+
+// 获取所有的文章路径用于静态生成
 export async function getStaticPaths() {
-	const blogEntries = await getSortedPosts();
-
-	// 初始化文章 ID 映射（用于 %post_id% 占位符）
-	initPostIdMap(blogEntries);
-
-	const paths: {
-		params: { slug: string };
-		props: { entry: CollectionEntry<"posts"> };
-	}[] = [];
-
-	for (const entry of blogEntries) {
-		// 将 id 转换为 slug（移除扩展名）以匹配路由参数
-		const defaultSlug = removeFileExtension(entry.id);
-
-		// 如果文章有自定义 permalink，不在 /posts/ 下创建路径
-		// 而是通过根目录的 [permalink].astro 处理
-		if (hasCustomPermalink(entry)) {
-			// 仍然需要在 /posts/ 下创建默认路径以便兼容旧链接
-			paths.push({
-				params: { slug: defaultSlug },
-				props: { entry },
-			});
-			continue;
-		}
-
-		// 如果全局 permalink 功能启用，不在 /posts/ 下创建路径
-		// 而是通过根目录的 [permalink].astro 处理
-		if (permalinkConfig.enable) {
-			// 仍然保留默认 slug 路径以便兼容旧链接
-			paths.push({
-				params: { slug: defaultSlug },
-				props: { entry },
-			});
-		} else {
-			// 全局 permalink 功能未启用
-			// 为每篇文章创建默认的 slug 路径
-			paths.push({
-				params: { slug: defaultSlug },
-				props: { entry },
-			});
-
-			// 如果文章有 alias，也创建对应的路径
-			if (entry.data.alias) {
-				// 移除开头的斜杠和结尾的斜杠
-				// 同时移除可能的 "posts/" 前缀，避免重复
-				let alias = entry.data.alias
-					.replace(/^\/+/, "")
-					.replace(/\/+$/, "");
-				if (alias.startsWith("posts/")) {
-					alias = alias.replace(/^posts\//, "");
-				}
-				paths.push({
-					params: { slug: alias },
-					props: { entry },
-				});
-			}
-		}
-	}
-
-	return paths;
+	const allBlogPosts = await getSortedPosts();
+	return allBlogPosts.map((post) => ({
+		params: { slug: post.id.replace(/\.md$/, '') },
+		props: { post },
+	}));
 }
 
-const { entry } = Astro.props;
+// 获取浏览量
+async function getViewsCount(slug: string): Promise<number> {
+	try {
+		const viewsCacheFile = path.join(process.cwd(), '.views-cache.json');
+		const cacheContent = await fs.readFile(viewsCacheFile, 'utf-8');
+		const viewsCache = JSON.parse(cacheContent);
+		return viewsCache[slug] || 0;
+	} catch {
+		return 0;
+	}
+}
+
+// 从路由参数获取 slug
+const { slug } = Astro.params;
+
+// 获取所有文章用于查找
+const allBlogPosts = await getSortedPosts();
+
+// 初始化文章 ID 映射
+initPostIdMap(allBlogPosts);
+
+// 根据 slug 查找文章
+let entry: CollectionEntry<"posts"> | undefined;
+const slugWithoutExt = slug?.replace(/\.md$/, '');
+for (const post of allBlogPosts) {
+    const postSlug = removeFileExtension(post.id);
+    if (postSlug === slugWithoutExt || post.id === slugWithoutExt) {
+        entry = post;
+        break;
+    }
+}
+
+// 如果 entry 为 undefined，返回 404
+if (!entry) {
+	return Astro.redirect('/404');
+}
+
 const { Content, headings } = await render(entry);
 const { remarkPluginFrontmatter } = await render(entry);
 
@@ -268,6 +255,7 @@ const jsonLd = {
                     tags={entry.data.tags}
                     category={entry.data.category || undefined}
                     id={entry.id}
+                    viewsCount={await getViewsCount(entry.id)}
                 />
                 {
                     (!entry.data.image|| (entry.data.image && !siteConfig.showCoverInContent)) && (
