@@ -30,7 +30,7 @@ let userInput = $state("");
 let messagesContainer: HTMLDivElement;
 
 // 系统提示词配置
-let systemPrompt = $state("你是一个友好、博学的助手，名字叫 Mizuki。请用简洁、温暖的语气回答问题。");
+let systemPrompt = $state("你是一个友好、博学的助手，名字叫小晤。请用简洁、温暖的语气回答问题。");
 let apiEndpoint = $state("/api/chat");
 
 // localStorage 键
@@ -39,7 +39,7 @@ const STORAGE_KEY_SYSTEM_PROMPT = "chat-page-system-prompt";
 
 // 默认配置
 const DEFAULT_CONFIG = {
-	systemPrompt: "你是一个友好、博学的助手，名字叫 Mizuki。请用简洁、温暖的语气回答问题。",
+	systemPrompt: "你是一个友好、博学的助手，名字叫小晤。请用简洁、温暖的语气回答问题。",
 	apiEndpoint: "/api/chat",
 };
 
@@ -229,7 +229,7 @@ onMount(() => {
 		pioInstance = window.pioInstance;
 		// 欢迎消息
 		setTimeout(() => {
-			showPioMessage("你好呀！我是 Mizuki，有什么可以帮你的吗？~", 3000);
+			showPioMessage("你好呀！我是小晤，有什么可以帮你的吗？~", 3000);
 		}, 500);
 	}
 });
@@ -247,7 +247,7 @@ onDestroy(() => {
 			<div class="empty-state flex flex-col items-center justify-center h-full text-center py-12">
 				<div class="text-6xl mb-4">👋</div>
 				<h3 class="text-lg font-semibold text-90 mb-2">你好呀！</h3>
-				<p class="text-50 text-sm">我是 Mizuki，有什么可以帮你的吗？</p>
+				<p class="text-50 text-sm">我是小晤，有什么可以帮你的吗？</p>
 				<p class="text-40 text-xs mt-4">我可以帮你搜索和推荐博客文章哦～</p>
 			</div>
 		{:else}
@@ -259,7 +259,7 @@ onDestroy(() => {
 						<div class="avatar flex-shrink-0">
 							{#if message.role === 'assistant'}
 								<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm">
-									M
+									唔
 								</div>
 							{:else}
 								<div class="w-8 h-8 rounded-full bg-500 flex items-center justify-center text-white text-sm">
@@ -273,7 +273,7 @@ onDestroy(() => {
 							<div class="message-header flex items-center gap-2 mb-1">
 								<span class="sender-name text-sm font-medium text-90">
 									{#if message.role === 'assistant'}
-										Mizuki
+										小晤
 									{:else}
 										你
 									{/if}
@@ -314,7 +314,7 @@ onDestroy(() => {
 						</div>
 						<div class="message-content flex-1 min-w-0">
 							<div class="message-header flex items-center gap-2 mb-1">
-								<span class="sender-name text-sm font-medium text-90">Mizuki</span>
+								<span class="sender-name text-sm font-medium text-90">小晤</span>
 							</div>
 							<div class="message-body card-base px-4 py-3 rounded-xl">
 								<div class="flex items-center gap-2 text-50">

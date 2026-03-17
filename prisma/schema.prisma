@@ -1,4 +1,4 @@
-// Prisma Schema for Mizuki Blog API
+// Prisma Schema for 小晤 Blog API
 // https://www.prisma.io/docs/concepts/components/prisma-schema
 
 generator client {

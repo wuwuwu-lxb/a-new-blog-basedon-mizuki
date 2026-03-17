@@ -21,7 +21,7 @@ export interface Project {
 export const projectsData: Project[] = [
 	{
 		id: "mizuki-blog",
-		title: "Mizuki Blog Theme",
+		title: "小晤 Blog Theme",
 		description:
 			"Modern blog theme developed based on the Astro framework, supporting multilingual, dark mode, and responsive design features.",
 		image: "",

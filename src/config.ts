@@ -545,7 +545,7 @@ export const pioConfig: import("./types/config").PioConfig = {
 	mode: "draggable", // 默认为可拖拽模式
 	hiddenOnMobile: true, // 默认在移动设备上隐藏
 	dialog: {
-		welcome: "Welcome to Mizuki Website!", // 欢迎词
+		welcome: "Welcome to 小晤 Website!", // 欢迎词
 		touch: [
 			"What are you doing?",
 			"Stop touching me!",

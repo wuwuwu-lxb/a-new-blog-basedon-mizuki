@@ -190,7 +190,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // 构建系统提示词（包含文章推荐）
-    const baseSystemPrompt = systemMessage?.content || "你是一个友好、博学的助手，名字叫 Mizuki。请用简洁、温暖的语气回答问题。";
+    const baseSystemPrompt = systemMessage?.content || "你是一个友好、博学的助手，名字叫小晤。请用简洁、温暖的语气回答问题。";
     const enhancedSystemPrompt = buildSystemPrompt(baseSystemPrompt, articles);
 
     // 格式化消息
