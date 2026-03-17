@@ -10,6 +10,7 @@
 		"test-api": "node scripts/test-api.js",
 		"sync-content": "node scripts/sync-content.js",
 		"init-content": "node scripts/init-content-repo.js",
+		"vec-init": "tsx scripts/vec-init.ts",
 		"predev": "node scripts/sync-content.js || true",
 		"prebuild": "node scripts/sync-content.js || true",
 		"check": "astro check",
@@ -54,8 +55,10 @@
 		"astro-icon": "^1.1.5",
 		"axios": "^1.13.6",
 		"bcryptjs": "^3.0.3",
+		"better-sqlite3": "^12.8.0",
 		"crypto-js": "^4.2.0",
 		"dayjs": "^1.11.19",
+		"dotenv": "^17.3.1",
 		"glob": "^13.0.6",
 		"gray-matter": "^4.0.3",
 		"hastscript": "^9.0.1",
@@ -82,6 +85,7 @@
 		"sanitize-html": "^2.17.1",
 		"satori": "^0.19.2",
 		"sharp": "^0.34.5",
+		"sqlite-vec": "^0.1.7",
 		"stylus": "^0.64.0",
 		"svelte": "^5.53.6",
 		"tailwindcss": "^4.2.1",
@@ -94,6 +98,7 @@
 		"@prisma/client": "^6.19.2",
 		"@rollup/plugin-yaml": "^4.1.2",
 		"@types/bcryptjs": "^3.0.0",
+		"@types/better-sqlite3": "^7.6.13",
 		"@types/hast": "^3.0.4",
 		"@types/jsonwebtoken": "^9.0.10",
 		"@types/markdown-it": "^14.1.2",
@@ -107,12 +112,16 @@
 		"prettier": "^3.8.1",
 		"prettier-plugin-astro": "^0.14.1",
 		"prettier-plugin-svelte": "^3.5.0",
-		"prisma": "^6.19.2"
+		"prisma": "^6.19.2",
+		"tsx": "^4.21.0"
 	},
 	"packageManager": "pnpm@10.22.0",
 	"pnpm": {
 		"overrides": {
 			"@emmetio/css-parser": "https://codeload.github.com/ramya-rao-a/css-parser/tar.gz/370c480ac103bd17c7bcfb34bf5d577dc40d3660"
-		}
+		},
+		"ignoredBuiltDependencies": [
+			"better-sqlite3"
+		]
 	}
 }

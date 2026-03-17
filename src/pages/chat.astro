@@ -1,33 +1,56 @@
 ---
-import WebChat from "../components/widget/WebChat.svelte";
+import ChatPage from "../components/widget/ChatPage.svelte";
+import Pio from "../components/widget/Pio.svelte";
 import MainGridLayout from "../layouts/MainGridLayout.astro";
-import { siteConfig } from "@/config";
 
 const title = "Chat";
 ---
 
 <MainGridLayout title={title}>
-    <div class="flex w-full rounded-(--radius-large) overflow-hidden relative min-h-32">
-        <div class="card-base z-10 px-9 py-6 relative w-full">
-            <!-- 页面标题 -->
-            <div class="flex flex-col items-start justify-center mb-8">
-                <h1 class="text-4xl font-bold text-90 mb-2 relative
-                          before:w-1 before:h-8 before:rounded-md before:bg-(--primary)
-                          before:absolute before:top-1/2 before:-translate-y-1/2 before:-left-4">
-                    Mizuki Chat
-                </h1>
-                <p class="text-50 ml-6">和 Mizuki 聊聊天吧 ~</p>
-            </div>
-
-            <!-- 聊天框组件 - 使用嵌入页面的完整聊天框 -->
-            <WebChat client:idle />
+    <div class="chat-page-content">
+        <!-- 页面标题 -->
+        <div class="chat-header mb-6">
+            <h1 class="text-3xl font-bold text-90 mb-2">Mizuki Chat</h1>
+            <p class="text-50">和 Mizuki 聊聊天吧 ~</p>
         </div>
+
+        <!-- Pio 看板娘 - 使用静态模式嵌入页面 -->
+        <div class="pio-wrapper mb-6">
+            <Pio client:load mode="static" />
+        </div>
+
+        <!-- 聊天组件 -->
+        <ChatPage client:load />
     </div>
 </MainGridLayout>
 
 <style>
-    /* 聊天页面容器样式 */
-    :global(.chat-page-container) {
-        min-height: calc(100vh - 400px);
+.chat-page-content {
+    padding: 1rem;
+}
+
+.pio-wrapper {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+@media (min-width: 768px) {
+    .pio-wrapper {
+        justify-content: flex-start;
     }
+}
+</style>
+
+<!-- 全局样式覆盖 Pio 容器定位 - 用于聊天页面嵌入模式 -->
+<style is:global>
+/* 聊天页面 Pio 样式覆盖 - 嵌入页面而非悬浮 */
+.pio-container.static-mode {
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+    z-index: auto !important;
+    display: block !important;
+}
 </style>

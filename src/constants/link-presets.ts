@@ -53,4 +53,9 @@ export const LinkPresets: { [key in LinkPreset]: NavBarLink } = {
 		url: "/timeline/",
 		icon: "material-symbols:timeline",
 	},
+	[LinkPreset.Chat]: {
+		name: "Chat",
+		url: "/chat",
+		icon: "material-symbols:chat",
+	},
 };

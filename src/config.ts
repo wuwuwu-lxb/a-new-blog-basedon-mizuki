@@ -262,7 +262,16 @@ export const navBarConfig: NavBarConfig = {
 	links: [
 		LinkPreset.Home,
 		LinkPreset.Archive,
+		LinkPreset.Chat, // 聊天页面
 		// 支持自定义导航栏链接，并且支持多级菜单，3.1 版本新加
+		{
+			name: "About",
+			url: "/about/",
+			icon: "material-symbols:info",
+			children: [
+				LinkPreset.Friends, // 友链页面
+			],
+		},
 		{
 			name: "Links",
 			url: "/links/",
@@ -279,35 +288,6 @@ export const navBarConfig: NavBarConfig = {
 					url: "https://space.bilibili.com/3537124569647330",
 					external: true,
 					icon: "fa7-brands:bilibili",
-				},
-			],
-		},
-		{
-			name: "My",
-			url: "/content/",
-			icon: "material-symbols:person",
-			children: [
- 				{
-					name: "Diary",
-					url: "/diary/",
-					icon: "material-symbols:book",
-				},
-			],
-		},
-		{
-			name: "About",
-			url: "/content/",
-			icon: "material-symbols:info",
-			children: [
-				{
-					name: "About",
-					url: "/about/",
-					icon: "material-symbols:person",
-				},
-				{
-					name: "Friends",
-					url: "/friends/",
-					icon: "material-symbols:group",
 				},
 			],
 		},
@@ -557,7 +537,7 @@ export const sakuraConfig: SakuraConfig = {
 
 // Pio 看板娘配置
 export const pioConfig: import("./types/config").PioConfig = {
-	enable: true, // 启用看板娘
+	enable: false, // 启用看板娘（关闭后仅在聊天页面显示）
 	models: ["/pio/models/pio/model.json"], // 默认模型路径
 	position: "left", // 模型位置
 	width: 280, // 默认宽度

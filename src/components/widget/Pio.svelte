@@ -2,9 +2,12 @@
 	import { onDestroy, onMount } from "svelte";
 	import { pioConfig } from "@/config";
 
+	// 接收外部传入的 mode 属性，优先使用外部传入的值
+	export let mode = null;
+
 	// 将配置转换为 Pio 插件需要的格式
 	const pioOptions = {
-		mode: pioConfig.mode,
+		mode: mode || pioConfig.mode,
 		hidden: pioConfig.hiddenOnMobile,
 		content: pioConfig.dialog || {},
 		model: pioConfig.models || ["/pio/models/pio/model.json"],
@@ -88,7 +91,9 @@
 	// 样式已通过 Layout.astro 静态引入，无需页面切换监听
 
 	onMount(() => {
-		if (!pioConfig.enable) return;
+		// static 模式下始终启用（不受全局 enable 配置限制）
+		const isStaticMode = mode === "static";
+		if (!pioConfig.enable && !isStaticMode) return;
 
 		// 如果配置了手机端隐藏，且当前屏幕宽度小于 1280px (平板/手机)，则直接终止，不加载脚本
 		if (pioConfig.hiddenOnMobile && window.matchMedia("(max-width: 1280px)").matches) {
@@ -106,8 +111,8 @@
 	});
 </script>
 
-{#if pioConfig.enable}
-	<div class={`pio-container ${pioConfig.position || 'right'}`} bind:this={pioContainer}>
+{#if pioConfig.enable || mode === "static"}
+	<div class={`pio-container ${pioConfig.position || 'right'} ${mode === 'static' ? 'static-mode' : ''}`} bind:this={pioContainer}>
 		<div class="pio-action"></div>
 		<canvas
 			id="pio"

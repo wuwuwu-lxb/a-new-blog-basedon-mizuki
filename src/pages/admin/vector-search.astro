@@ -1,0 +1,263 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>向量搜索 - 管理后台</title>
+  </head>
+  <body>
+    <Layout>
+      <div class="vector-search-page">
+        <!-- 返回按钮 -->
+        <a href="/admin" class="back-link mb-6 inline-flex items-center gap-2 text-sm text-50 hover:text-primary transition-colors">
+          <span class="iconify" data-icon="material-symbols:arrow-back"></span>
+          返回管理后台
+        </a>
+
+        <!-- 页面标题 -->
+        <div class="page-header mb-8">
+          <h1 class="text-2xl font-bold text-90">🧠 RAG 向量搜索</h1>
+          <p class="text-50 mt-2">基于向量相似度的文章语义搜索</p>
+        </div>
+
+        <!-- 搜索区域 -->
+        <div class="search-section card-base shadow-xl rounded-xl p-6 mb-6">
+          <div class="form-group mb-4">
+            <label for="search-query" class="block text-sm font-medium text-90 mb-2">
+              搜索查询
+            </label>
+            <input
+              type="text"
+              id="search-query"
+              class="w-full bg-(--btn-regular-bg) rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-(--primary)"
+              placeholder="输入搜索关键词，例如：'Astro 部署教程'"
+            />
+            <p class="text-xs text-40 mt-2">
+              向量搜索会理解语义，而不仅仅是关键词匹配
+            </p>
+          </div>
+
+          <div class="flex gap-4">
+            <button
+              id="search-btn"
+              class="btn-primary px-6 py-3 rounded-lg font-medium text-white bg-(--primary) hover:opacity-90 transition-opacity"
+            >
+              搜索
+            </button>
+            <button
+              id="reindex-btn"
+              class="btn-plain px-6 py-3 rounded-lg font-medium border border-black/10 dark:border-white/10 hover:bg-(--btn-regular-bg) transition-colors"
+            >
+              重新索引所有文章
+            </button>
+          </div>
+
+          <!-- 状态消息 -->
+          <div id="status-message" class="status-message mt-4 p-4 rounded-lg hidden"></div>
+        </div>
+
+        <!-- 搜索结果 -->
+        <div class="results-section card-base shadow-xl rounded-xl p-6 mb-6 hidden">
+          <h2 class="text-lg font-semibold text-90 mb-4">搜索结果</h2>
+          <div id="results-list" class="space-y-4"></div>
+        </div>
+
+        <!-- 索引状态 -->
+        <div class="index-status card-base shadow-xl rounded-xl p-6">
+          <h2 class="text-lg font-semibold text-90 mb-4">索引状态</h2>
+          <div id="index-list" class="space-y-2"></div>
+        </div>
+      </div>
+    </Layout>
+
+    <!-- 导入 Iconify -->
+    <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+
+    <script type="module">
+      const searchQuery = document.getElementById('search-query');
+      const searchBtn = document.getElementById('search-btn');
+      const reindexBtn = document.getElementById('reindex-btn');
+      const statusMessage = document.getElementById('status-message');
+      const resultsSection = document.querySelector('.results-section');
+      const resultsList = document.getElementById('results-list');
+      const indexList = document.getElementById('index-list');
+
+      // 加载索引状态
+      async function loadIndexStatus() {
+        try {
+          const response = await fetch('/api/admin/vector-search');
+          const data = await response.json();
+
+          if (data.success && data.vectors) {
+            if (data.vectors.length === 0) {
+              indexList.innerHTML = `
+                <p class="text-50 text-sm">暂无索引数据</p>
+                <p class="text-xs text-40 mt-2">点击"重新索引所有文章"来创建向量索引</p>
+              `;
+            } else {
+              indexList.innerHTML = data.vectors.map(v => `
+                <div class="flex items-center justify-between py-2 border-b border-(--border)">
+                  <span class="text-sm text-90">${v.title}</span>
+                  <span class="text-xs text-40">${v.slug}</span>
+                </div>
+              `).join('');
+            }
+          }
+        } catch (error) {
+          console.error('加载索引状态失败:', error);
+        }
+      }
+
+      // 执行搜索
+      async function doSearch() {
+        const query = searchQuery.value.trim();
+        if (!query) {
+          showStatus('请输入搜索关键词', 'error');
+          return;
+        }
+
+        searchBtn.disabled = true;
+        searchBtn.innerHTML = '<span class="iconify" data-icon="eosimgs:loading"></span> 搜索中...';
+
+        try {
+          const response = await fetch(`/api/admin/vector-search?q=${encodeURIComponent(query)}`);
+          const data = await response.json();
+
+          if (data.success && data.results) {
+            renderResults(data.results);
+            showStatus(`找到 ${data.total} 篇相关文章`, 'success');
+          } else {
+            showStatus('搜索失败：' + (data.error || '未知错误'), 'error');
+          }
+        } catch (error) {
+          console.error('搜索失败:', error);
+          showStatus('搜索失败，请重试', 'error');
+        } finally {
+          searchBtn.disabled = false;
+          searchBtn.textContent = '搜索';
+        }
+      }
+
+      // 渲染搜索结果
+      function renderResults(results) {
+        if (results.length === 0) {
+          resultsList.innerHTML = '<p class="text-50 text-sm">未找到相关文章</p>';
+        } else {
+          resultsList.innerHTML = results.map(r => `
+            <div class="result-item p-4 rounded-lg bg-(--btn-regular-bg)">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="font-medium text-90">${r.title}</h3>
+                <span class="text-xs text-primary">${(r.maxSimilarity * 100).toFixed(1)}% 匹配</span>
+              </div>
+              <p class="text-xs text-40 mb-2">/posts/${r.slug}</p>
+              ${r.chunks.slice(0, 2).map(chunk => `
+                <div class="chunk mt-2 p-2 rounded bg-black/5 dark:bg-white/5">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-xs text-50">片段相似度：${(chunk.similarity * 100).toFixed(1)}%</span>
+                  </div>
+                  <p class="text-sm text-70 line-clamp-3">${chunk.content}</p>
+                </div>
+              `).join('')}
+            </div>
+          `).join('');
+        }
+        resultsSection.classList.remove('hidden');
+      }
+
+      // 重新索引
+      async function doReindex() {
+        if (!confirm('确定要重新索引所有文章吗？这可能需要几分钟时间。')) {
+          return;
+        }
+
+        reindexBtn.disabled = true;
+        reindexBtn.innerHTML = '<span class="iconify" data-icon="eosimgs:loading"></span> 索引中...';
+
+        try {
+          const response = await fetch('/api/admin/vector-search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'reindex' }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            showStatus(`索引完成！成功：${data.result.success}, 失败：${data.result.failed.length}`, 'success');
+            setTimeout(loadIndexStatus, 1000);
+          } else {
+            showStatus('索引失败：' + (data.error || '未知错误'), 'error');
+          }
+        } catch (error) {
+          console.error('索引失败:', error);
+          showStatus('索引失败，请重试', 'error');
+        } finally {
+          reindexBtn.disabled = false;
+          reindexBtn.textContent = '重新索引所有文章';
+        }
+      }
+
+      // 显示状态消息
+      function showStatus(message, type) {
+        statusMessage.textContent = message;
+        statusMessage.className = `status-message mt-4 p-4 rounded-lg ${
+          type === 'success'
+            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
+            : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+        }`;
+        statusMessage.classList.remove('hidden');
+
+        setTimeout(() => {
+          statusMessage.classList.add('hidden');
+        }, 5000);
+      }
+
+      // 事件绑定
+      searchBtn.addEventListener('click', doSearch);
+      searchQuery.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') doSearch();
+      });
+      reindexBtn.addEventListener('click', doReindex);
+
+      // 页面加载时
+      loadIndexStatus();
+    </script>
+  </body>
+</html>
+
+<style>
+  .vector-search-page {
+    min-height: calc(100vh - 200px);
+    padding: 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .page-header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .result-item {
+    transition: transform 0.2s;
+  }
+
+  .result-item:hover {
+    transform: translateX(4px);
+  }
+
+  .status-message {
+    transition: all 0.3s;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>

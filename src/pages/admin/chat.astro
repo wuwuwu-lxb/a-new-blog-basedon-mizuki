@@ -1,0 +1,345 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Chat 设置 - 管理后台</title>
+	</head>
+	<body>
+		<Layout>
+			<div class="chat-settings-page">
+				<!-- 返回按钮 -->
+				<a href="/admin" class="back-link mb-6 inline-flex items-center gap-2 text-sm text-50 hover:text-primary transition-colors">
+					<span class="iconify" data-icon="material-symbols:arrow-back"></span>
+					返回管理后台
+				</a>
+
+				<!-- 页面标题 -->
+				<div class="page-header mb-8">
+					<h1 class="text-2xl font-bold text-90">💬 Chat 设置</h1>
+					<p class="text-50 mt-2">配置 AI 聊天的系统提示词和 API 端点</p>
+				</div>
+
+				<!-- 设置表单 -->
+				<div class="settings-form card-base shadow-xl rounded-xl p-6">
+					<form id="chat-settings-form">
+						<!-- 系统提示词 -->
+						<div class="form-group mb-6">
+							<label for="system-prompt" class="block text-sm font-medium text-90 mb-2">
+								系统提示词
+							</label>
+							<textarea
+								id="system-prompt"
+								name="systemPrompt"
+								rows="5"
+								class="w-full resize-none bg-(--btn-regular-bg) rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-(--primary)"
+								placeholder="设置 AI 助手的角色和回复风格..."
+							></textarea>
+							<p class="text-xs text-40 mt-2">
+								定义 AI 助手的角色、语气和回复风格。例如："你是一个友好、博学的助手，名字叫 Mizuki。"
+							</p>
+						</div>
+
+						<!-- API 端点 -->
+						<div class="form-group mb-6">
+							<label for="api-endpoint" class="block text-sm font-medium text-90 mb-2">
+								API 端点
+							</label>
+							<input
+								type="text"
+								id="api-endpoint"
+								name="apiEndpoint"
+								class="w-full bg-(--btn-regular-bg) rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-(--primary)"
+								placeholder="/api/chat"
+							/>
+							<p class="text-xs text-40 mt-2">
+								聊天 API 的请求地址
+							</p>
+						</div>
+
+						<!-- 模型选择 -->
+						<div class="form-group mb-6">
+							<label for="model" class="block text-sm font-medium text-90 mb-2">
+								模型
+							</label>
+							<select
+								id="model"
+								name="model"
+								class="w-full bg-(--btn-regular-bg) rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-(--primary)"
+							>
+								<option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+								<option value="gpt-4">GPT-4</option>
+								<option value="gpt-4-turbo">GPT-4 Turbo</option>
+								<option value="claude-3-sonnet">Claude 3 Sonnet</option>
+								<option value="claude-3-opus">Claude 3 Opus</option>
+							</select>
+							<p class="text-xs text-40 mt-2">
+								选择使用的 AI 模型
+							</p>
+						</div>
+
+						<!-- 温度参数 -->
+						<div class="form-group mb-6">
+							<label for="temperature" class="block text-sm font-medium text-90 mb-2">
+								温度 (Temperature)
+								<span id="temperature-value" class="text-40 ml-2">0.7</span>
+							</label>
+							<input
+								type="range"
+								id="temperature"
+								name="temperature"
+								min="0"
+								max="1"
+								step="0.1"
+								value="0.7"
+								class="w-full"
+							/>
+							<div class="flex justify-between text-xs text-40 mt-1">
+								<span>更确定 (0)</span>
+								<span>更随机 (1)</span>
+							</div>
+							<p class="text-xs text-40 mt-2">
+								控制回复的随机性。值越高回复越有创造性，值越低回复越稳定
+							</p>
+						</div>
+
+						<!-- 保存按钮 -->
+						<div class="form-actions flex gap-4">
+							<button
+								type="submit"
+								class="btn-primary px-6 py-3 rounded-lg font-medium text-white bg-(--primary) hover:opacity-90 transition-opacity"
+							>
+								保存设置
+							</button>
+							<button
+								type="button"
+								id="reset-btn"
+								class="btn-plain px-6 py-3 rounded-lg font-medium border border-black/10 dark:border-white/10 hover:bg-(--btn-regular-bg) transition-colors"
+							>
+								恢复默认
+							</button>
+						</div>
+					</form>
+
+					<!-- 状态提示 -->
+					<div id="status-message" class="status-message mt-4 p-4 rounded-lg hidden"></div>
+				</div>
+			</div>
+		</Layout>
+
+		<!-- 导入 Iconify -->
+		<script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+
+		<!-- ChatSettings 组件 -->
+		<script type="module">
+			import ChatSettings from '../components/admin/ChatSettings.svelte';
+
+			// 初始化 Svelte 组件
+			const target = document.querySelector('.chat-settings-page');
+			if (target) {
+				// 通过 Vanilla JS 处理表单
+				initChatSettings();
+			}
+
+			function initChatSettings() {
+				const form = document.getElementById('chat-settings-form');
+				const systemPrompt = document.getElementById('system-prompt');
+				const apiEndpoint = document.getElementById('api-endpoint');
+				const model = document.getElementById('model');
+				const temperature = document.getElementById('temperature');
+				const temperatureValue = document.getElementById('temperature-value');
+				const resetBtn = document.getElementById('reset-btn');
+				const statusMessage = document.getElementById('status-message');
+
+				// 默认配置
+				const defaultConfig = {
+					systemPrompt: "你是一个友好、博学的助手，名字叫 Mizuki。请用简洁、温暖的语气回答问题。",
+					apiEndpoint: "/api/chat",
+					model: "gpt-3.5-turbo",
+					temperature: 0.7,
+				};
+
+				// 加载配置
+				async function loadConfig() {
+					try {
+						// 先尝试从本地存储读取
+						const saved = localStorage.getItem('chat-settings');
+						if (saved) {
+							const config = JSON.parse(saved);
+							systemPrompt.value = config.systemPrompt || defaultConfig.systemPrompt;
+							apiEndpoint.value = config.apiEndpoint || defaultConfig.apiEndpoint;
+							model.value = config.model || defaultConfig.model;
+							temperature.value = config.temperature || defaultConfig.temperature;
+							temperatureValue.textContent = config.temperature || defaultConfig.temperature;
+							return;
+						}
+
+						// 从 API 读取
+						const response = await fetch('/api/admin/chat-settings');
+						const data = await response.json();
+						if (data.success && data.config) {
+							const config = data.config;
+							systemPrompt.value = config.systemPrompt || defaultConfig.systemPrompt;
+							apiEndpoint.value = config.apiEndpoint || defaultConfig.apiEndpoint;
+							model.value = config.model || defaultConfig.model;
+							temperature.value = config.temperature || defaultConfig.temperature;
+							temperatureValue.textContent = config.temperature || defaultConfig.temperature;
+						}
+					} catch (error) {
+						console.error('加载配置失败:', error);
+						// 使用默认配置
+						systemPrompt.value = defaultConfig.systemPrompt;
+						apiEndpoint.value = defaultConfig.apiEndpoint;
+						model.value = defaultConfig.model;
+						temperature.value = defaultConfig.temperature;
+					}
+				}
+
+				// 温度滑块变化
+				temperature.addEventListener('input', () => {
+					temperatureValue.textContent = temperature.value;
+				});
+
+				// 保存配置
+				form.addEventListener('submit', async (e) => {
+					e.preventDefault();
+
+					const config = {
+						systemPrompt: systemPrompt.value,
+						apiEndpoint: apiEndpoint.value,
+						model: model.value,
+						temperature: parseFloat(temperature.value),
+					};
+
+					try {
+						// 保存到本地存储
+						localStorage.setItem('chat-settings', JSON.stringify(config));
+
+						// 保存到服务器
+						const response = await fetch('/api/admin/chat-settings', {
+							method: 'PUT',
+							headers: {
+								'Content-Type': 'application/json',
+							},
+							body: JSON.stringify({ config }),
+						});
+
+						const data = await response.json();
+						if (data.success) {
+							showStatus('设置已保存！', 'success');
+						} else {
+							showStatus('保存失败：' + (data.error || '未知错误'), 'error');
+						}
+					} catch (error) {
+						console.error('保存配置失败:', error);
+						showStatus('保存失败，请重试', 'error');
+					}
+				});
+
+				// 恢复默认配置
+				resetBtn.addEventListener('click', () => {
+					if (confirm('确定要恢复默认配置吗？')) {
+						systemPrompt.value = defaultConfig.systemPrompt;
+						apiEndpoint.value = defaultConfig.apiEndpoint;
+						model.value = defaultConfig.model;
+						temperature.value = defaultConfig.temperature;
+						temperatureValue.textContent = defaultConfig.temperature;
+
+						localStorage.removeItem('chat-settings');
+						showStatus('已恢复默认配置', 'success');
+					}
+				});
+
+				// 显示状态消息
+				function showStatus(message, type) {
+					statusMessage.textContent = message;
+					statusMessage.className = `status-message mt-4 p-4 rounded-lg ${
+						type === 'success' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+					}`;
+					statusMessage.classList.remove('hidden');
+
+					setTimeout(() => {
+						statusMessage.classList.add('hidden');
+					}, 3000);
+				}
+
+				// 页面加载时读取配置
+				loadConfig();
+			}
+		</script>
+	</body>
+</html>
+
+<style>
+	.chat-settings-page {
+		min-height: calc(100vh - 200px);
+		padding: 2rem;
+		max-width: 800px;
+		margin: 0 auto;
+	}
+
+	.page-header h1 {
+		font-size: 1.75rem;
+		font-weight: 700;
+		color: var(--text-primary);
+	}
+
+	.settings-form {
+		background: var(--card-bg);
+	}
+
+	.form-group label {
+		font-weight: 500;
+		color: var(--text-primary);
+	}
+
+	input[type="text"],
+	textarea,
+	select {
+		border: 1px solid transparent;
+		transition: all 0.2s;
+	}
+
+	input[type="text"]:focus,
+	textarea:focus,
+	select:focus {
+		border-color: var(--primary);
+	}
+
+	input[type="range"] {
+		-webkit-appearance: none;
+		height: 6px;
+		background: var(--btn-regular-bg);
+		border-radius: 3px;
+		cursor: pointer;
+	}
+
+	input[type="range"]::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		width: 18px;
+		height: 18px;
+		background: var(--primary);
+		border-radius: 50%;
+		cursor: pointer;
+		transition: transform 0.1s;
+	}
+
+	input[type="range"]::-webkit-slider-thumb:hover {
+		transform: scale(1.1);
+	}
+
+	.btn-primary {
+		transition: opacity 0.2s;
+	}
+
+	.btn-primary:hover {
+		opacity: 0.9;
+	}
+
+	.status-message {
+		transition: all 0.3s;
+	}
+</style>
