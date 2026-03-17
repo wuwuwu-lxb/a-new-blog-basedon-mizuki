@@ -50,9 +50,9 @@ src/data/bangumi-data.json
 src/data/bilibili-data.json
 
 # database
-prisma/*.db
-prisma/*.db-journal
-*.db
+# prisma/*.db
+# prisma/*.db-journal
+# *.db
 
 # cache
 .cache/
