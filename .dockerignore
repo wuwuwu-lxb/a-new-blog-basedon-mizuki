@@ -19,6 +19,9 @@ public/pagefind
 node_modules
 api/node_modules
 
+# API 目录（不需要）
+api
+
 # 数据文件（使用 Docker 卷）
 prisma/*.db
 prisma/*.db-journal
@@ -50,7 +53,7 @@ deploy
 ecosystem.config.js
 pm2.json
 
-# 脚本（部分不需要）
+# 脚本（不需要）
 scripts/deploy.sh
 scripts/dev-all.js
 
