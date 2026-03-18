@@ -1,5 +1,7 @@
 export {};
 
+import { JwtPayload } from './lib/auth';
+
 declare global {
 	interface HTMLElementTagNameMap {
 		"table-of-contents": HTMLElement & {
@@ -29,6 +31,13 @@ declare global {
 			isLoaded: boolean;
 		};
 		siteConfig: any;
+	}
+}
+
+// Astro locals 扩展
+declare module 'astro' {
+	interface Locals {
+		user?: JwtPayload;
 	}
 }
 

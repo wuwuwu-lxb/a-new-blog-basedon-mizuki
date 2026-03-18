@@ -41,6 +41,33 @@ import Layout from '../../layouts/Layout.astro';
 				</div>
 			</div>
 		</Layout>
+
+		<script>
+			// 前端路由守卫：检查登录状态
+			(function() {
+				const token = localStorage.getItem('admin_token');
+				if (!token) {
+					// 未登录，重定向到登录页
+					window.location.href = '/admin/login';
+					return;
+				}
+
+				// 可选：验证 token 有效性
+				fetch('/api/auth/verify', {
+					headers: { 'Authorization': 'Bearer ' + token }
+				})
+				.then(res => {
+					if (!res.ok) {
+						// Token 无效，清除并重定向
+						localStorage.removeItem('admin_token');
+						window.location.href = '/admin/login';
+					}
+				})
+				.catch(() => {
+					// 网络错误，不处理，允许访问
+				});
+			})();
+		</script>
 	</body>
 </html>
 

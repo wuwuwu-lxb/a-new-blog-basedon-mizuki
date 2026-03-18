@@ -20,7 +20,9 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # 复制配置文件
-COPY astro.config.mjs svelte.config.js tsconfig.json ./
+COPY astro.config.mjs svelte.config.js tsconfig.json .env.build ./
+# 重命名.env.build 为.env（构建时需要）
+RUN mv .env.build .env
 COPY prisma ./prisma
 COPY public ./public
 COPY src ./src
@@ -29,7 +31,11 @@ COPY scripts ./scripts
 # 生成 Prisma 客户端
 RUN npx prisma generate
 
-# 构建 Astro（包含 prebuild 钩子：sync-content）
+# 生成 Prisma 客户端
+RUN npx prisma generate
+
+# 构建 Astro（增加内存限制，包含 prebuild 钩子：sync-content）
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 RUN pnpm build
 
 # ============================================
@@ -56,26 +62,30 @@ COPY --from=builder --chown=nodejs:nodejs /app/package.json ./
 COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nodejs:nodejs /app/astro.config.mjs ./
 COPY --from=builder --chown=nodejs:nodejs /app/svelte.config.js ./
-COPY --from=builder --chown=nodejs:nodejs /app/tailwind.config.js ./
 COPY --from=builder --chown=nodejs:nodejs /app/tsconfig.json ./
+
+# 复制 src/content 目录（SSR 运行时需要读取文章内容）
+COPY --from=builder --chown=nodejs:nodejs /app/src/content ./src/content
 
 # 创建数据目录
 RUN mkdir -p /app/data /app/public/uploads /app/logs && chown -R nodejs:nodejs /app/data /app/public/uploads /app/logs
+# 创建 .views-cache.json 文件并设置权限
+RUN touch /app/.views-cache.json && echo '{}' > /app/.views-cache.json && chown nodejs:nodejs /app/.views-cache.json
 
 # 切换到非 root 用户
 USER nodejs
 
 # 暴露端口
-EXPOSE 3000
+EXPOSE 4321
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+    CMD node -e "require('http').get('http://localhost:4321/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # 环境变量
 ENV NODE_ENV=production
-ENV PORT=3000
-ENV HOSTNAME=0.0.0.0
+ENV PORT=4321
+ENV HOST=0.0.0.0
 ENV DATABASE_URL=file:/app/data/dev.db
 
 # 启动命令

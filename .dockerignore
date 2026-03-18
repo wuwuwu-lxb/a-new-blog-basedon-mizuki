@@ -19,8 +19,8 @@ public/pagefind
 node_modules
 api/node_modules
 
-# API 目录（不需要）
-api
+# API 目录（不需要）- 注意：不要排除 src/pages/api
+# api 单独一行会错误地排除 src/pages/api，已移除
 
 # 数据文件（使用 Docker 卷）
 prisma/*.db

@@ -6,10 +6,30 @@ import type { APIRoute } from 'astro';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../../../lib/prisma';
+import { checkRateLimit } from '../../../lib/rateLimiter.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'mizuki-jwt-secret-key-dev-abc123';
 
 export async function POST({ request }: any) {
+  // API 限流检查
+  const rateLimitResult = checkRateLimit(request);
+  if (!rateLimitResult.allowed) {
+    return new Response(
+      JSON.stringify({
+        error: '请求过于频繁，请稍后再试',
+        resetTime: new Date(rateLimitResult.resetTime!).toISOString(),
+      }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-RateLimit-Reset': String(rateLimitResult.resetTime),
+          'X-RateLimit-Remaining': '0',
+        },
+      }
+    );
+  }
+
   try {
     const body = await request.json();
     const { email, password } = body;
