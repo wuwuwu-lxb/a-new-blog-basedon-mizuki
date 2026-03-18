@@ -1,5 +1,5 @@
----
 // Chat 设置 API - 获取和保存配置
+// src/pages/api/admin/chat-settings.ts
 import type { APIRoute } from 'astro';
 
 const STORAGE_KEY = 'chat-settings';
@@ -86,4 +86,3 @@ export const PUT: APIRoute = async ({ request }) => {
     });
   }
 };
----
