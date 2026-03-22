@@ -80,15 +80,13 @@
 
 <style>
   .verify-container {
-    position: fixed;
-    inset: 0;
+    position: relative;
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-    z-index: 9999;
-    overflow: hidden;
+    overflow: auto;
   }
 
   .verify-container.show-animation {

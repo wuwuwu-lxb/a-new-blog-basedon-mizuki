@@ -106,6 +106,7 @@ export async function POST({ request }: { request: Request }) {
       tags,
       category,
       image,
+      images,
       draft,
       published,
       views,
@@ -170,6 +171,7 @@ export async function POST({ request }: { request: Request }) {
         rawContent: content || '',
         excerpt: description || null,
         cover: image || null,
+        images: '[]', // 初始化为空 JSON 数组
         published: published === true,
         draft: draft === true,
         views: views || 0,

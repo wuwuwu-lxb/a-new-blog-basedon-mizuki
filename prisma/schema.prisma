@@ -42,9 +42,10 @@ model Article {
   title       String
   slug        String   @unique
   content     String   // 预渲染的 HTML 内容
-  rawContent  String   // 原始 Markdown（编辑时用）
+  rawContent  String?   // 原始 Markdown（编辑时用）
   excerpt     String?
   cover       String?
+  images      String?  // JSON 数组，存储图片 {id, name, base64}
   published   Boolean  @default(false)
   views       Int      @default(0)
   createdAt   DateTime @default(now())

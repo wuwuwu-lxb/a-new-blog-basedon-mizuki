@@ -2,6 +2,7 @@
  * GET /api/admin/articles/[slug] - 获取文章详情
  * PUT /api/admin/articles/[slug] - 更新文章
  * DELETE /api/admin/articles/[slug] - 删除文章
+ * DELETE /api/admin/articles/[slug]?imageId=xxx - 删除文章中的图片
  */
 
 import type { APIRoute } from 'astro';
@@ -79,11 +80,12 @@ export async function GET({ request }: { request: Request }) {
           tags: article.tags.map((t) => t.name),
           category: article.categories[0]?.name || null,
           image: article.cover,
+          images: article.images ? JSON.parse(article.images) : [], // 图片列表
           draft: article.draft,
           views: article.views,
+          lang: article.lang,
           pinned: article.pinned,
           priority: article.priority,
-          lang: article.lang,
           comment: article.comment,
           authorName: article.authorName,
           sourceLink: article.sourceLink,
@@ -127,6 +129,7 @@ export async function PUT({ request }: { request: Request }) {
       tags,
       category,
       image,
+      images,
       published,
       draft,
       views,
@@ -176,6 +179,7 @@ export async function PUT({ request }: { request: Request }) {
       rawContent: content !== undefined ? content : existing.rawContent,
       excerpt: description !== undefined ? description : existing.excerpt,
       cover: image !== undefined ? image : existing.cover,
+      images: images !== undefined ? JSON.stringify(images) : existing.images,
       published: isPublishedValue,
       draft: draft !== undefined ? draft : existing.draft,
       views: views !== undefined ? views : existing.views,
@@ -256,6 +260,7 @@ export async function PUT({ request }: { request: Request }) {
 export async function DELETE({ request }: { request: Request }) {
   const url = new URL(request.url);
   const slug = url.pathname.split('/').filter(Boolean).pop() || '';
+  const imageId = url.searchParams.get('imageId');
 
   try {
     const existing = await prisma.article.findUnique({ where: { slug } });
@@ -266,7 +271,22 @@ export async function DELETE({ request }: { request: Request }) {
       });
     }
 
-    // 删除文章（评论会级联删除）
+    // 如果指定了 imageId，只删除该图片
+    if (imageId) {
+      const images: any[] = existing.images ? JSON.parse(existing.images) : [];
+      const newImages = images.filter(img => img.id !== imageId);
+
+      await prisma.article.update({
+        where: { slug },
+        data: { images: JSON.stringify(newImages) },
+      });
+
+      return new Response(JSON.stringify({ message: '图片已删除' }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 删除整篇文章（images 字段会自动一起删除）
     await prisma.article.delete({ where: { slug } });
 
     return new Response(JSON.stringify({ message: '文章已删除' }), {

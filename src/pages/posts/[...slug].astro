@@ -90,7 +90,7 @@ const jsonLd = {
 };
 
 // 计算字数和阅读时间（中文字符统计，英文按词统计）
-const textContent = article.rawContent.replace(/[#*`\[\]]/g, '');
+const textContent = (article.rawContent || article.content || '').replace(/[#*`\[\]]/g, '');
 // 提取中文字符数量
 const chinesePart = textContent.match(/[\u4e00-\u9fa5]/g) || [];
 const chineseCount = chinesePart.length;

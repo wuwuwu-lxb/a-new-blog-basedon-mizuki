@@ -17,8 +17,6 @@
   let articles: Article[] = [];
   let loading = true;
   let error = '';
-  let uploading = false;
-  let uploadedUrl = '';
   let syncing = false;
 
   onMount(async () => {
@@ -142,40 +140,6 @@
     }
   }
 
-  async function handleImageUpload(event: Event) {
-    const target = event.target as HTMLInputElement;
-    const file = target.files?.[0];
-    if (!file) return;
-
-    uploading = true;
-    const formData = new FormData();
-    formData.append('image', file);
-
-    try {
-      const res = await fetch('/api/admin/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        uploadedUrl = data.url || `/uploads/images/${data.filename}`;
-        alert('图片上传成功');
-      } else {
-        const data = await res.json();
-        alert(`上传失败：${data.error}`);
-      }
-    } catch (err) {
-      alert('上传失败：网络错误');
-    } finally {
-      uploading = false;
-    }
-  }
-
-  function copyToClipboard(text: string) {
-    navigator.clipboard.writeText(text);
-    alert('已复制到剪贴板');
-  }
 </script>
 
 <div class="admin-container">
@@ -204,25 +168,6 @@
       <div class="stat-number orange">{articles.filter(a => !a.published).length}</div>
       <div class="stat-label">草稿</div>
     </div>
-  </div>
-
-  <!-- Upload Section -->
-  <div class="upload-section">
-    <label class="btn btn-upload">
-      📎 上传图片
-      <input
-        type="file"
-        accept="image/*"
-        on:change={handleImageUpload}
-        disabled={uploading}
-      />
-    </label>
-    {#if uploadedUrl}
-      <div class="upload-success">
-        <span>上传成功：{uploadedUrl}</span>
-        <button class="btn btn-sm" on:click={() => copyToClipboard(uploadedUrl)}>复制</button>
-      </div>
-    {/if}
   </div>
 
   <!-- Article List -->

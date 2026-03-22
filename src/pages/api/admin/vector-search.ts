@@ -73,7 +73,7 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
     const { action, slug } = body;
