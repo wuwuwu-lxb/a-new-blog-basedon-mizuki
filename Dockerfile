@@ -31,9 +31,6 @@ COPY scripts ./scripts
 # 生成 Prisma 客户端
 RUN npx prisma generate
 
-# 生成 Prisma 客户端
-RUN npx prisma generate
-
 # 构建 Astro（增加内存限制，包含 prebuild 钩子：sync-content）
 ENV NODE_OPTIONS="--max-old-space-size=2048"
 RUN pnpm build

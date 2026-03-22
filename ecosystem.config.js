@@ -17,18 +17,14 @@ module.exports = {
       script: './dist/server/entry.mjs',
       cwd: __dirname,
       instances: 1,
-      exec_mode: 'fork', // 使用 fork 模式（非 cluster）
+      exec_mode: 'fork',
 
       // 环境变量
       env: {
         NODE_ENV: 'production',
-        PORT: 3000,
+        PORT: 4321,
         HOSTNAME: '0.0.0.0',
-      },
-
-      // 环境变量文件（可选）
-      env_production: {
-        NODE_ENV: 'production',
+        DATABASE_URL: 'file:./prisma/dev.db',
       },
 
       // 日志配置
@@ -41,48 +37,7 @@ module.exports = {
 
       // 重启策略
       watch: false,
-      max_memory_restart: '1G',
-      max_restarts: 10,
-      min_uptime: '10s',
-
-      // 资源限制
       max_memory_restart: '500M',
-
-      // 集群配置（如果需要使用 cluster 模式）
-      // instances: 'max',
-      // exec_mode: 'cluster',
-
-      // 健康检查（需要 pm2-plus 或 pm2.io）
-      // health_check: {
-      //   interval: 30000,
-      //   url: 'http://localhost:3000/api/health',
-      // },
-    },
-    {
-      name: 'mizuki-api',
-      script: './api/.next/standalone/server.js',
-      cwd: __dirname,
-      instances: 1,
-      exec_mode: 'fork',
-
-      // 环境变量
-      env: {
-        NODE_ENV: 'production',
-        PORT: 3001,
-        HOSTNAME: '0.0.0.0',
-      },
-
-      // 日志配置
-      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-      log_file: './logs/pm2-api-combined.log',
-      error_file: './logs/pm2-api-error.log',
-      out_file: './logs/pm2-api-out.log',
-      merge_logs: true,
-      auto_restart: true,
-
-      // 重启策略
-      watch: false,
-      max_memory_restart: '1G',
       max_restarts: 10,
       min_uptime: '10s',
     },
