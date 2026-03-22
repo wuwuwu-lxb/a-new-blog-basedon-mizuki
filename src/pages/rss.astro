@@ -6,7 +6,7 @@ import { Icon } from "astro-icon/components";
 import I18nKey from "../i18n/i18nKey";
 import { i18n } from "../i18n/translation";
 
-const posts = (await getSortedPosts()).filter((post) => !post.data.encrypted);
+const posts = (await getSortedPosts()).filter((post) => !post.encrypted);
 const recentPosts = posts.slice(0, 6);
 ---
 
@@ -45,7 +45,7 @@ const recentPosts = posts.slice(0, 6);
                     <code class="bg-(--card-bg) px-3 py-2 rounded-lg text-sm font-mono text-75 border border-(--line-divider) break-all">
                         {Astro.site}rss.xml
                     </code>
-                    <button 
+                    <button
                         id="copy-rss-btn"
                         class="px-4 py-2 bg-(--primary) text-white rounded-lg hover:opacity-80 transition-all duration-200 font-medium text-sm whitespace-nowrap"
                         data-url={`${Astro.site}rss.xml`}
@@ -66,18 +66,18 @@ const recentPosts = posts.slice(0, 6);
                 {recentPosts.map((post) => (
                     <article class="bg-(--card-bg) rounded-xl p-4 border border-(--line-divider) hover:border-(--primary) transition-all duration-300">
                         <h3 class="text-lg font-semibold text-90 mb-2 hover:text-(--primary) transition-colors">
-                            <a href={`/posts/${post.id}/`} class="hover:underline">
-                                {post.data.title}
+                            <a href={`/posts/${post.slug}/`} class="hover:underline">
+                                {post.title}
                             </a>
                         </h3>
-                        {post.data.description && (
+                        {post.excerpt && (
                             <p class="text-75 mb-3 line-clamp-2">
-                                {post.data.description}
+                                {post.excerpt}
                             </p>
                         )}
                         <div class="flex items-center gap-4 text-sm text-60">
-                            <time datetime={post.data.published.toISOString()} class="text-75">
-                                {formatDateToYYYYMMDD(post.data.published)}
+                            <time datetime={(post.publishedAt || post.createdAt).toISOString()} class="text-75">
+                                {formatDateToYYYYMMDD(post.publishedAt || post.createdAt)}
                             </time>
                         </div>
                     </article>

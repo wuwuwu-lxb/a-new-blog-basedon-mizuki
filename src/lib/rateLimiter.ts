@@ -18,15 +18,18 @@ const requestStore = new Map<string, RequestRecord>();
 
 // 不同 API 的限流配置
 const rateLimitConfigs: Record<string, RateLimitConfig> = {
-  // 登录/注册 API：5 次/分钟
-  '/api/auth/login': { windowMs: 60000, maxRequests: 5 },
-  '/api/auth/register': { windowMs: 60000, maxRequests: 5 },
-  // Chat API：10 次/分钟
-  '/api/chat': { windowMs: 60000, maxRequests: 10 },
-  // 管理 API：10 次/分钟
-  '/api/admin/': { windowMs: 60000, maxRequests: 10 },
-  // 其他 API：30 次/分钟
-  default: { windowMs: 60000, maxRequests: 30 },
+  // 登录/注册 API：10 次/分钟
+  '/api/auth/login': { windowMs: 60000, maxRequests: 10 },
+  '/api/auth/admin-login': { windowMs: 60000, maxRequests: 10 },
+  '/api/auth/register': { windowMs: 60000, maxRequests: 10 },
+  // Chat API：20 次/分钟
+  '/api/chat': { windowMs: 60000, maxRequests: 20 },
+  // 管理 API：30 次/分钟
+  '/api/admin/': { windowMs: 60000, maxRequests: 30 },
+  // 搜索 API：30 次/分钟
+  '/api/search-articles': { windowMs: 60000, maxRequests: 30 },
+  // 其他 API：60 次/分钟
+  default: { windowMs: 60000, maxRequests: 60 },
 };
 
 /**

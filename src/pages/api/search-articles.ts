@@ -4,7 +4,7 @@
  */
 
 import type { APIRoute } from 'astro';
-import { getCollection } from 'astro:content';
+import { prisma } from '@/lib/prisma';
 
 export async function GET({ url }: { url: URL }) {
   try {
@@ -22,9 +22,13 @@ export async function GET({ url }: { url: URL }) {
       });
     }
 
-    // 获取所有文章
-    const posts = await getCollection('posts', ({ data }) => {
-      return !data.draft;
+    // 从数据库获取所有已发布的文章
+    const posts = await prisma.article.findMany({
+      where: { published: true },
+      include: {
+        tags: true,
+        categories: true,
+      },
     });
 
     // 关键词搜索（标题、标签、分类、描述）
@@ -32,14 +36,14 @@ export async function GET({ url }: { url: URL }) {
 
     const results = posts
       .filter((post) => {
-        const title = post.data.title?.toLowerCase() || '';
-        const tags = (post.data.tags || []).map(tag => tag.toLowerCase());
-        const category = (post.data.category || '').toLowerCase();
-        const description = (post.data.description || '').toLowerCase();
+        const title = post.title?.toLowerCase() || '';
+        const tags = (post.tags || []).map(tag => tag.name.toLowerCase());
+        const category = (post.categories[0]?.name || '').toLowerCase();
+        const description = (post.excerpt || '').toLowerCase();
         const slug = post.slug.toLowerCase();
 
-        // 检查是否包含所有搜索词
-        return searchTerms.every(term =>
+        // 检查是否包含任意一个搜索词（改为 some 而不是 every）
+        return searchTerms.some(term =>
           title.includes(term) ||
           tags.some(tag => tag.includes(term)) ||
           category.includes(term) ||
@@ -49,16 +53,18 @@ export async function GET({ url }: { url: URL }) {
       })
       .map((post) => ({
         slug: post.slug,
-        title: post.data.title,
-        description: post.data.description || '',
-        tags: post.data.tags || [],
-        category: post.data.category || '',
-        published: post.data.published,
+        title: post.title,
+        description: post.excerpt || '',
+        tags: post.tags.map(t => t.name),
+        category: post.categories[0]?.name || '',
+        published: post.publishedAt,
         url: `/posts/${post.slug}`,
       }))
       .sort((a, b) => {
         // 按发布时间倒序
-        return new Date(b.published).getTime() - new Date(a.published).getTime();
+        const dateA = a.published ? new Date(a.published).getTime() : 0;
+        const dateB = b.published ? new Date(b.published).getTime() : 0;
+        return dateB - dateA;
       })
       .slice(0, limit);
 

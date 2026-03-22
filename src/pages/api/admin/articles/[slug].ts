@@ -5,11 +5,39 @@
  */
 
 import type { APIRoute } from 'astro';
-import path from 'path';
-import fs from 'fs/promises';
-import matter from 'gray-matter';
+import { prisma } from '@/lib/prisma';
+import MarkdownIt from 'markdown-it';
 
-const POSTS_DIR = path.join(process.cwd(), 'src/content/posts');
+// Markdown 解析器
+const markdownParser = new MarkdownIt();
+
+/**
+ * 创建或获取标签
+ */
+async function findOrCreateTag(name: string): Promise<{ id: number; name: string; slug: string }> {
+  const slug = name.toLowerCase().replace(/\s+/g, '-');
+  let tag = await prisma.tag.findUnique({ where: { slug } });
+  if (!tag) {
+    tag = await prisma.tag.create({
+      data: { name, slug },
+    });
+  }
+  return tag;
+}
+
+/**
+ * 创建或获取分类
+ */
+async function findOrCreateCategory(name: string): Promise<{ id: number; name: string; slug: string }> {
+  const slug = name.toLowerCase().replace(/\s+/g, '-');
+  let category = await prisma.category.findUnique({ where: { slug } });
+  if (!category) {
+    category = await prisma.category.create({
+      data: { name, slug },
+    });
+  }
+  return category;
+}
 
 export async function GET({ request }: { request: Request }) {
   const url = new URL(request.url);
@@ -22,52 +50,65 @@ export async function GET({ request }: { request: Request }) {
     });
   }
 
-  // 加载浏览量缓存
-  let viewsCache: Record<string, number> = {};
   try {
-    const viewsCacheFile = path.join(process.cwd(), '.views-cache.json');
-    const cacheContent = await fs.readFile(viewsCacheFile, 'utf-8');
-    viewsCache = JSON.parse(cacheContent);
-  } catch {
-    // 文件不存在或解析失败，使用空缓存
-  }
+    const article = await prisma.article.findUnique({
+      where: { slug },
+      include: {
+        tags: true,
+        categories: true,
+      },
+    });
 
-  try {
-    let filePath = path.join(POSTS_DIR, slug, 'index.md');
-    let altPath = path.join(POSTS_DIR, `${slug}.md`);
-
-    let content;
-    try {
-      content = await fs.readFile(filePath, 'utf-8');
-    } catch {
-      content = await fs.readFile(altPath, 'utf-8');
-      filePath = altPath;
+    if (!article) {
+      return new Response(JSON.stringify({ error: '文章不存在' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    const { data, content: body } = matter(content);
-
-    return new Response(JSON.stringify({
-      article: {
-        slug,
-        filePath,
-        title: data.title || '无标题',
-        description: data.description || '',
-        published: data.published !== false,
-        publishedAt: data.published || data.date,
-        tags: data.tags || [],
-        category: data.category,
-        image: data.image,
-        draft: data.draft || false,
-        content: body,
-        views: viewsCache[slug] || data.views || 0,
-      },
-    }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({
+        article: {
+          id: article.id,
+          slug: article.slug,
+          title: article.title,
+          description: article.excerpt || '',
+          content: article.rawContent, // 返回原始 Markdown
+          published: article.published,
+          publishedAt: article.publishedAt,
+          tags: article.tags.map((t) => t.name),
+          category: article.categories[0]?.name || null,
+          image: article.cover,
+          draft: article.draft,
+          views: article.views,
+          pinned: article.pinned,
+          priority: article.priority,
+          lang: article.lang,
+          comment: article.comment,
+          authorName: article.authorName,
+          sourceLink: article.sourceLink,
+          licenseName: article.licenseName,
+          licenseUrl: article.licenseUrl,
+          encrypted: article.encrypted,
+          password: article.password,
+          permalink: article.permalink,
+          alias: article.alias,
+          prevSlug: article.prevSlug,
+          prevTitle: article.prevTitle,
+          nextSlug: article.nextSlug,
+          nextTitle: article.nextTitle,
+          createdAt: article.createdAt,
+          updatedAt: article.updatedAt,
+        },
+      }),
+      {
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   } catch (error: any) {
     console.error('Get article error:', error);
-    return new Response(JSON.stringify({ error: '文章不存在' }), {
-      status: 404,
+    return new Response(JSON.stringify({ error: '服务器错误：' + error.message }), {
+      status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
   }
@@ -79,92 +120,130 @@ export async function PUT({ request }: { request: Request }) {
 
   try {
     const body = await request.json();
-    const { title, description, content, tags, category, image, published, draft, views } = body;
+    const {
+      title,
+      description,
+      content,
+      tags,
+      category,
+      image,
+      published,
+      draft,
+      views,
+      // 扩展字段
+      lang,
+      pinned,
+      comment,
+      priority,
+      authorName,
+      sourceLink,
+      licenseName,
+      licenseUrl,
+      encrypted,
+      password,
+      permalink,
+      alias,
+    } = body;
 
-    // 加载浏览量缓存
-    let viewsCache: Record<string, number> = {};
-    const viewsCacheFile = path.join(process.cwd(), '.views-cache.json');
-    try {
-      const cacheContent = await fs.readFile(viewsCacheFile, 'utf-8');
-      viewsCache = JSON.parse(cacheContent);
-    } catch {
-      // 文件不存在或解析失败，使用空缓存
+    // 检查文章是否存在
+    const existing = await prisma.article.findUnique({ where: { slug } });
+    if (!existing) {
+      return new Response(JSON.stringify({ error: '文章不存在' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    // 如果传入了 views 参数，更新缓存
-    if (views !== undefined) {
-      viewsCache[slug] = views;
-      await fs.writeFile(viewsCacheFile, JSON.stringify(viewsCache, null, 2), 'utf-8');
-    }
+    // 将 Markdown 转换为 HTML
+    const htmlContent = content ? markdownParser.render(content) : existing.content;
 
-    let filePath = path.join(POSTS_DIR, slug, 'index.md');
-    let altPath = path.join(POSTS_DIR, `${slug}.md`);
+    // 处理标签和分类
+    const tagRecords = tags?.length
+      ? await Promise.all(tags.map((t: string) => findOrCreateTag(t)))
+      : [];
+    const categoryRecord = category
+      ? await findOrCreateCategory(category)
+      : null;
 
-    let fileContent;
-    try {
-      fileContent = await fs.readFile(filePath, 'utf-8');
-    } catch {
-      fileContent = await fs.readFile(altPath, 'utf-8');
-      filePath = altPath;
-    }
+    // 构建更新数据
+    // 注意：published 可能是布尔值（发布状态）或日期字符串（发布日期）
+    const isPublishedValue = typeof published === 'boolean' ? published : existing.published;
+    const publishedDateValue = typeof published === 'string' ? new Date(published) : existing.publishedAt;
 
-    const { data, content: oldContent } = matter(fileContent);
-
-    // 辅助函数：格式化日期为 YYYY-MM-DD
-    function formatDate(dateStr: string): string {
-      if (!dateStr) return new Date().toISOString().split('T')[0];
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr; // 如果无法解析，返回原值
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-
-    const frontmatter: any = {
-      title: title || data.title,
-      description: description !== undefined ? description : data.description,
-      published: published ? formatDate(published) : (data.published || data.date || new Date().toISOString()),
-      tags: tags !== undefined ? tags : (data.tags || []),
-      category: category !== undefined ? category : (data.category || ''),
-      image: image !== undefined ? (image || '') : (data.image || ''),
-      draft: draft !== undefined ? draft : (data.draft || false),
+    const updateData: any = {
+      title: title || existing.title,
+      content: htmlContent,
+      rawContent: content !== undefined ? content : existing.rawContent,
+      excerpt: description !== undefined ? description : existing.excerpt,
+      cover: image !== undefined ? image : existing.cover,
+      published: isPublishedValue,
+      draft: draft !== undefined ? draft : existing.draft,
+      views: views !== undefined ? views : existing.views,
+      publishedAt: publishedDateValue,
+      lang: lang !== undefined ? lang : existing.lang,
+      pinned: pinned !== undefined ? pinned : existing.pinned,
+      comment: comment !== undefined ? comment : existing.comment,
+      priority: priority !== undefined ? priority : existing.priority,
+      authorName: authorName !== undefined ? authorName : existing.authorName,
+      sourceLink: sourceLink !== undefined ? sourceLink : existing.sourceLink,
+      licenseName: licenseName !== undefined ? licenseName : existing.licenseName,
+      licenseUrl: licenseUrl !== undefined ? licenseUrl : existing.licenseUrl,
+      encrypted: encrypted !== undefined ? encrypted : existing.encrypted,
+      password: password !== undefined ? password : existing.password,
+      permalink: permalink !== undefined ? permalink : existing.permalink,
+      alias: alias !== undefined ? alias : existing.alias,
     };
 
-    // 如果传入的 published 为 false 或 draft 为 true，则设置为草稿
-    if (published === false || draft === true) {
-      frontmatter.draft = true;
-    } else {
-      frontmatter.draft = false;
+    // 更新标签关联
+    if (tags !== undefined) {
+      updateData.tags = {
+        disconnect: await prisma.tag.findMany({
+          where: { articles: { some: { slug } } },
+          select: { id: true },
+        }),
+        connect: tagRecords.map((t) => ({ id: t.id })),
+      };
     }
 
-    let markdownContent = '---\n';
-    Object.keys(frontmatter).forEach((key) => {
-      const value = frontmatter[key];
-      if (Array.isArray(value)) {
-        markdownContent += `${key}:\n`;
-        value.forEach((item: string) => {
-          markdownContent += `  - ${item}\n`;
+    // 更新分类关联
+    if (category !== undefined) {
+      // 先获取当前分类
+      const currentArticle = await prisma.article.findUnique({
+        where: { slug },
+        select: { categories: { select: { id: true } } },
+      });
+
+      if (currentArticle && currentArticle.categories.length > 0) {
+        // 断开现有分类
+        await prisma.article.update({
+          where: { slug },
+          data: { categories: { disconnect: currentArticle.categories.map(c => ({ id: c.id })) } },
         });
-      } else if (value === '') {
-        // 空字符串需要加引号，否则会被解析为 null
-        markdownContent += `${key}: ""\n`;
-      } else {
-        markdownContent += `${key}: ${value}\n`;
       }
-    });
-    markdownContent += '---\n\n';
-    markdownContent += content !== undefined ? content : oldContent;
 
-    await fs.writeFile(filePath, markdownContent, 'utf-8');
+      // 如果有新分类，连接它
+      if (categoryRecord) {
+        updateData.categories = { connect: [{ id: categoryRecord.id }] };
+      }
+    }
 
-    return new Response(JSON.stringify({
-      message: '文章更新成功',
-      slug,
-      filePath: filePath.replace(POSTS_DIR + '/', ''),
-    }), {
-      headers: { 'Content-Type': 'application/json' },
+    const article = await prisma.article.update({
+      where: { slug },
+      data: updateData,
     });
+
+    return new Response(
+      JSON.stringify({
+        message: '文章更新成功',
+        article: {
+          id: article.id,
+          slug: article.slug,
+        },
+      }),
+      {
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   } catch (error: any) {
     console.error('Update article error:', error);
     return new Response(JSON.stringify({ error: '更新失败：' + error.message }), {
@@ -179,16 +258,16 @@ export async function DELETE({ request }: { request: Request }) {
   const slug = url.pathname.split('/').filter(Boolean).pop() || '';
 
   try {
-    let dirPath = path.join(POSTS_DIR, slug);
-    let filePath = path.join(POSTS_DIR, `${slug}.md`);
-
-    try {
-      await fs.access(dirPath);
-      await fs.rm(dirPath, { recursive: true, force: true });
-    } catch {
-      await fs.access(filePath);
-      await fs.unlink(filePath);
+    const existing = await prisma.article.findUnique({ where: { slug } });
+    if (!existing) {
+      return new Response(JSON.stringify({ error: '文章不存在' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
+
+    // 删除文章（评论会级联删除）
+    await prisma.article.delete({ where: { slug } });
 
     return new Response(JSON.stringify({ message: '文章已删除' }), {
       headers: { 'Content-Type': 'application/json' },
@@ -196,7 +275,7 @@ export async function DELETE({ request }: { request: Request }) {
   } catch (error: any) {
     console.error('Delete article error:', error);
     return new Response(JSON.stringify({ error: '删除失败：' + error.message }), {
-      status: 404,
+      status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
   }

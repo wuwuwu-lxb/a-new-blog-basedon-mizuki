@@ -3,54 +3,46 @@ import Pagination from "../components/control/Pagination.astro";
 import PostPage from "../components/PostPage.astro";
 import { PAGE_SIZE } from "../constants/constants";
 import MainGridLayout from "../layouts/MainGridLayout.astro";
-import { getSortedPosts } from "../utils/content-utils";
-import { initPostIdMap } from "../utils/permalink-utils";
+import { getSortedPosts, getSortedPostsListWithUrl } from "../utils/content-utils";
 
 // 使用 prerender = true 生成静态页面供 Pagefind 索引
 export const prerender = true;
 
+// 获取所有排序后的文章
+const allBlogPosts = await getSortedPosts();
+const allBlogPostsList = await getSortedPostsListWithUrl();
+const totalPages = Math.ceil(allBlogPosts.length / PAGE_SIZE);
+
 // 生成分页路径
 export async function getStaticPaths() {
-	const allBlogPosts = await getSortedPosts();
-	const totalPages = Math.ceil(allBlogPosts.length / PAGE_SIZE);
-
-	// 生成所有分页路径
-	const paths = [];
-	for (let i = 1; i <= totalPages; i++) {
-		paths.push({
-			params: { page: i === 1 ? undefined : String(i) },
-			props: { allBlogPosts, totalPages, currentPage: i },
-		});
-	}
-
-	return paths;
+    const posts = await getSortedPosts();
+    const total = Math.ceil(posts.length / PAGE_SIZE);
+    const paths: Array<{ params: { page?: string }; props: { currentPage: number } }> = [];
+    for (let i = 1; i <= total; i++) {
+        paths.push({
+            params: { page: i === 1 ? undefined : String(i) },
+            props: { currentPage: i },
+        });
+    }
+    return paths;
 }
 
-// 获取所有文章
-const allBlogPosts = Astro.props.allBlogPosts || await getSortedPosts();
-const totalPages = Astro.props.totalPages || Math.ceil(allBlogPosts.length / PAGE_SIZE);
-const currentPageNum = Astro.props.currentPage || 1;
+// 获取当前页码
+const { page: pageParam } = Astro.params;
+const currentPage = pageParam ? parseInt(pageParam, 10) : 1;
 
-// 初始化文章 ID 映射（用于 permalink 功能）
-initPostIdMap(allBlogPosts);
-
-// 页码验证
-if (currentPageNum < 1 || currentPageNum > totalPages) {
-    return Astro.redirect('/404');
-}
-
-const startIndex = (currentPageNum - 1) * PAGE_SIZE;
+const startIndex = (currentPage - 1) * PAGE_SIZE;
 const endIndex = startIndex + PAGE_SIZE;
-const pageData = allBlogPosts.slice(startIndex, endIndex);
+const pageData = allBlogPostsList.slice(startIndex, endIndex);
 
 // 构建分页 URL
-const currentUrl = currentPageNum <= 1 ? '/' : `/${currentPageNum}`;
-const nextUrl = currentPageNum < totalPages ? `/${currentPageNum + 1}` : null;
-const prevUrl = currentPageNum > 1 ? `/${currentPageNum - 1}` : null;
+const currentUrl = currentPage <= 1 ? '/' : `/${currentPage}`;
+const nextUrl = currentPage < totalPages ? `/${currentPage + 1}` : null;
+const prevUrl = currentPage > 1 ? `/${currentPage - 1}` : null;
 
 const page = {
     data: pageData,
-    currentPage: currentPageNum,
+    currentPage: currentPage,
     lastPage: totalPages,
     url: {
         current: currentUrl,

@@ -85,10 +85,18 @@ import Layout from '../../layouts/Layout.astro';
       const resultsList = document.getElementById('results-list');
       const indexList = document.getElementById('index-list');
 
+      // 获取认证令牌
+      function getAuthHeaders() {
+        const token = localStorage.getItem('admin_token');
+        return token ? { 'Authorization': `Bearer ${token}` } : {};
+      }
+
       // 加载索引状态
       async function loadIndexStatus() {
         try {
-          const response = await fetch('/api/admin/vector-search');
+          const response = await fetch('/api/admin/vector-search', {
+            headers: getAuthHeaders()
+          });
           const data = await response.json();
 
           if (data.success && data.vectors) {
@@ -123,7 +131,9 @@ import Layout from '../../layouts/Layout.astro';
         searchBtn.innerHTML = '<span class="iconify" data-icon="eosimgs:loading"></span> 搜索中...';
 
         try {
-          const response = await fetch(`/api/admin/vector-search?q=${encodeURIComponent(query)}`);
+          const response = await fetch(`/api/admin/vector-search?q=${encodeURIComponent(query)}`, {
+            headers: getAuthHeaders()
+          });
           const data = await response.json();
 
           if (data.success && data.results) {
@@ -179,7 +189,10 @@ import Layout from '../../layouts/Layout.astro';
         try {
           const response = await fetch('/api/admin/vector-search', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              ...getAuthHeaders()
+            },
             body: JSON.stringify({ action: 'reindex' }),
           });
 

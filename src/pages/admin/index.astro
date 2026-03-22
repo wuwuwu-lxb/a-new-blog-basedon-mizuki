@@ -6,7 +6,7 @@ import Layout from '../../layouts/Layout.astro';
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>管理后台 - 小晤</title>
+		<title>管理后台 - 小唔</title>
 	</head>
 	<body>
 		<Layout>
@@ -48,7 +48,7 @@ import Layout from '../../layouts/Layout.astro';
 				const token = localStorage.getItem('admin_token');
 				if (!token) {
 					// 未登录，重定向到登录页
-					window.location.href = '/admin/login';
+					window.location.href = '/login';
 					return;
 				}
 
@@ -60,7 +60,7 @@ import Layout from '../../layouts/Layout.astro';
 					if (!res.ok) {
 						// Token 无效，清除并重定向
 						localStorage.removeItem('admin_token');
-						window.location.href = '/admin/login';
+						window.location.href = '/login';
 					}
 				})
 				.catch(() => {

@@ -1,29 +1,48 @@
 ---
-import type { CollectionEntry } from "astro:content";
 import { commentConfig } from "@/config";
-import { removeFileExtension } from "@/utils/url-utils";
 import CommentsPanel from "./CommentsPanel.svelte";
 
 interface Props {
-	post: CollectionEntry<"posts">;
+    article?: {
+        id: number;
+        slug: string;
+        comment: boolean;
+        title: string;
+    };
+    post?: {
+        id: string;
+        data: {
+            comment?: boolean;
+        };
+    };
 }
 
-const { id, data } = Astro.props.post;
-const slug = removeFileExtension(id);
+// 支持数据库文章或 Content Collection 文章
+let commentSlug: string;
+let commentEnabled: boolean;
 
-// 使用文章 slug 作为评论标识
-const commentSlug = slug;
+if (Astro.props.article) {
+    // 数据库文章
+    commentSlug = Astro.props.article.slug;
+    commentEnabled = Astro.props.article.comment ?? true;
+} else if (Astro.props.post) {
+    // Content Collection 文章
+    const { id, data } = Astro.props.post;
+    commentSlug = id.replace(/\.(md|mdx|markdown)$/i, "");
+    commentEnabled = data.comment ?? true;
+} else {
+    commentEnabled = false;
+    commentSlug = "";
+}
 
 let commentService = "";
 if (commentConfig?.enable && commentConfig?.twikoo) {
-	commentService = "twikoo";
+    commentService = "twikoo";
 }
-
-const commentEnabled = data.comment ?? true;
 ---
+
 {commentConfig?.enable && commentEnabled && (
-  <div class="card-base p-6 mb-4">
-    <!-- API 评论系统 -->
-    <CommentsPanel client:only="svelte" commentSlug={commentSlug} />
-  </div>
+    <div class="card-base p-6 mb-4">
+        <CommentsPanel client:only="svelte" commentSlug={commentSlug} />
+    </div>
 )}

@@ -13,6 +13,7 @@ import DisplaySettings from "./widget/DisplaySettings.svelte";
 import DropdownMenu from "./widget/DropdownMenu.astro";
 import NavMenuPanel from "./widget/NavMenuPanel.astro";
 import AuthPanel from "./widget/AuthPanel.svelte";
+import NotificationPanel from "./widget/NotificationPanel.svelte";
 
 const className = Astro.props.class;
 
@@ -42,6 +43,7 @@ let links: NavBarLink[] = navBarConfig.links.map(
         <!-- 左侧：登录/用户显示 -->
         <div class="flex items-center gap-2">
             <AuthPanel client:only="svelte"></AuthPanel>
+            <NotificationPanel client:only="svelte"></NotificationPanel>
         </div>
 
         <!-- 中间：导航链接 -->

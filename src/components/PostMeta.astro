@@ -122,30 +122,9 @@ const {
     pageViewsText: i18n(I18nKey.profileStatsPageViews),
     articleId: id,
 }}>
-    // 使用 sessionStorage 防止同一会话中重复增加浏览量
-    const viewedKey = 'article_viewed_' + articleId;
-
-    async function incrementPageViews() {
-        // 如果已经访问过这篇文章，不增加
-        if (sessionStorage.getItem(viewedKey)) {
-            return;
-        }
-
-        try {
-            // 增加浏览量（异步，不阻塞页面）
-            await fetch(`/api/views/${encodeURIComponent(articleId)}`, {
-                method: 'POST',
-                keepalive: true // 即使页面关闭也会完成请求
-            });
-        } catch (error) {
-            console.error('Error incrementing page views:', error);
-        }
-
-        // 标记为已访问
-        sessionStorage.setItem(viewedKey, '1');
-    }
-
-    // 页面加载时增加浏览量
-    incrementPageViews();
+    // 服务器端已在页面加载时增加浏览量，客户端不再重复增加
+    // 使用 sessionStorage 显示浏览量（如果需要）
+    // const viewedKey = 'article_viewed_' + articleId;
+    // sessionStorage.setItem(viewedKey, '1');
 </script>
 )}

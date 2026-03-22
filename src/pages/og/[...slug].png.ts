@@ -1,12 +1,10 @@
-import type { CollectionEntry } from "astro:content";
-import { getCollection } from "astro:content";
 import * as fs from "node:fs";
 import type { APIContext, GetStaticPaths } from "astro";
 import satori from "satori";
 import sharp from "sharp";
-import { removeFileExtension } from "@/utils/url-utils";
 
 import { profileConfig, siteConfig } from "../../config";
+import { getSortedPosts, type DbArticle } from "../../utils/content-utils";
 
 type Weight = 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
 type FontStyle = "normal" | "italic";
@@ -24,14 +22,12 @@ export const getStaticPaths: GetStaticPaths = async () => {
 		return [];
 	}
 
-	const allPosts = await getCollection("posts");
-	const publishedPosts = allPosts.filter((post) => !post.data.draft);
+	const allPosts = await getSortedPosts();
+	const publishedPosts = allPosts.filter((post) => !post.draft);
 
 	return publishedPosts.map((post) => {
-		// 将 id 转换为 slug（移除扩展名）以匹配路由参数
-		const slug = removeFileExtension(post.id);
 		return {
-			params: { slug },
+			params: { slug: post.slug },
 			props: { post },
 		};
 	});
@@ -99,7 +95,7 @@ async function fetchNotoSansSCFonts() {
 
 export async function GET({
 	props,
-}: APIContext<{ post: CollectionEntry<"posts"> }>) {
+}: APIContext<{ post: DbArticle }>) {
 	const { post } = props;
 
 	// Try to fetch fonts from Google Fonts (woff2) at runtime.
@@ -124,13 +120,14 @@ export async function GET({
 	const subtleTextColor = `hsl(${hue}, 10%, 75%)`;
 	const backgroundColor = `hsl(${hue}, 15%, 12%)`;
 
-	const pubDate = post.data.published.toLocaleDateString("en-US", {
+	const publishedDate = post.publishedAt || post.createdAt;
+	const pubDate = publishedDate.toLocaleDateString("en-US", {
 		year: "numeric",
 		month: "short",
 		day: "numeric",
 	});
 
-	const description = post.data.description;
+	const description = post.excerpt;
 
 	const template = {
 		type: "div",
@@ -228,7 +225,7 @@ export async function GET({
 													WebkitLineClamp: 3,
 													WebkitBoxOrient: "vertical",
 												},
-												children: post.data.title,
+												children: post.title,
 											},
 										},
 									],

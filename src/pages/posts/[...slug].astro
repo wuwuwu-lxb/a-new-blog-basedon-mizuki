@@ -1,188 +1,120 @@
 ---
-import type { CollectionEntry } from "astro:content";
-import { render } from "astro:content";
-import path from "node:path";
-import fs from "node:fs/promises";
 import Comment from "@components/comment/index.astro";
 import License from "@components/misc/License.astro";
-import Markdown from "@components/misc/Markdown.astro";
 import SharePoster from "@components/misc/SharePoster.svelte";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
-import { getSortedPosts } from "@utils/content-utils";
-import {
-	getFileDirFromPath,
-	getPostUrlBySlug,
-	removeFileExtension,
-} from "@utils/url-utils";
-import {
-	hasCustomPermalink,
-	initPostIdMap,
-} from "@utils/permalink-utils";
+import { getArticleBySlug } from "@utils/content-utils";
+import { getPostUrlBySlug } from "@utils/url-utils";
 import { Icon } from "astro-icon/components";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { licenseConfig, permalinkConfig, shareConfig } from "src/config";
+import { licenseConfig, shareConfig } from "src/config";
 import ImageWrapper from "../../components/misc/ImageWrapper.astro";
 import PostMetadata from "../../components/PostMeta.astro";
 import { profileConfig, siteConfig } from "../../config";
 import { formatDateToYYYYMMDD } from "../../utils/date-utils";
 import Encryptor from "../../components/Encryptor.astro";
+import { prisma } from '@/lib/prisma';
 
-// 在 Server 模式下，使用 getStaticPaths 生成静态页面供 Pagefind 索引
-// 同时保留 SSR 能力用于动态功能（如浏览统计）
-export const prerender = true;
-
-// 获取所有的文章路径用于静态生成
-export async function getStaticPaths() {
-	const allBlogPosts = await getSortedPosts();
-	return allBlogPosts.map((post) => ({
-		params: { slug: post.id.replace(/\.md$/, '') },
-		props: { post },
-	}));
-}
-
-// 获取浏览量
-async function getViewsCount(slug: string): Promise<number> {
-	try {
-		const viewsCacheFile = path.join(process.cwd(), '.views-cache.json');
-		const cacheContent = await fs.readFile(viewsCacheFile, 'utf-8');
-		const viewsCache = JSON.parse(cacheContent);
-		return viewsCache[slug] || 0;
-	} catch {
-		return 0;
-	}
-}
+// 使用 SSR 模式
+export const prerender = false;
 
 // 从路由参数获取 slug
 const { slug } = Astro.params;
 
-// 获取所有文章用于查找
-const allBlogPosts = await getSortedPosts();
+if (!slug) {
+    return Astro.redirect('/404');
+}
 
-// 初始化文章 ID 映射
-initPostIdMap(allBlogPosts);
+// 从数据库获取文章
+const article = await getArticleBySlug(slug);
 
-// 根据 slug 查找文章
-let entry: CollectionEntry<"posts"> | undefined;
-const slugWithoutExt = slug?.replace(/\.md$/, '');
-for (const post of allBlogPosts) {
-    const postSlug = removeFileExtension(post.id);
-    if (postSlug === slugWithoutExt || post.id === slugWithoutExt) {
-        entry = post;
-        break;
+// 如果文章不存在，返回 404
+if (!article || (!article.published && import.meta.env.PROD)) {
+    return Astro.redirect('/404');
+}
+
+// 获取浏览量（从数据库）
+const viewsCount = article.views;
+
+// 增加浏览量
+await prisma.article.update({
+    where: { id: article.id },
+    data: { views: article.views + 1 },
+});
+
+// 处理封面图片
+let posterCoverUrl = article.cover || '';
+if (posterCoverUrl && posterCoverUrl.startsWith("http")) {
+    try {
+        const response = await fetch(posterCoverUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        const base64 = Buffer.from(arrayBuffer).toString("base64");
+        const contentType = response.headers.get("content-type") || "image/jpeg";
+        posterCoverUrl = `data:${contentType};base64,${base64}`;
+    } catch {
+        // 保持原 URL
     }
 }
 
-// 如果 entry 为 undefined，返回 404
-if (!entry) {
-	return Astro.redirect('/404');
-}
-
-const { Content, headings } = await render(entry);
-const { remarkPluginFrontmatter } = await render(entry);
-
-// Process cover image for SharePoster
-let posterCoverUrl = entry.data.image;
-if (entry.data.image) {
-	const isLocal = !(
-		entry.data.image.startsWith("/") ||
-		entry.data.image.startsWith("http") ||
-		entry.data.image.startsWith("https") ||
-		entry.data.image.startsWith("data:")
-	);
-	if (isLocal) {
-		const basePath = getFileDirFromPath(entry.filePath || "");
-		const files = import.meta.glob<ImageMetadata>("../../**", {
-			import: "default",
-		});
-		let normalizedPath = path
-			.normalize(path.join("../../", basePath, entry.data.image))
-			.replace(/\\/g, "/");
-		const file = files[normalizedPath];
-		if (file) {
-			const img = await file();
-			posterCoverUrl = img.src;
-		}
-	} else if (entry.data.image.startsWith("http")) {
-		try {
-			const response = await fetch(entry.data.image);
-			const arrayBuffer = await response.arrayBuffer();
-			const base64 = Buffer.from(arrayBuffer).toString("base64");
-			const contentType = response.headers.get("content-type") || "image/jpeg";
-			posterCoverUrl = `data:${contentType};base64,${base64}`;
-		} catch {
-			posterCoverUrl = entry.data.image;
-		}
-	}
-}
-
-// Process avatar image for SharePoster
-let posterAvatarUrl = profileConfig.avatar;
-if (profileConfig.avatar) {
-	const isLocal = !(
-		profileConfig.avatar.startsWith("/") ||
-		profileConfig.avatar.startsWith("http") ||
-		profileConfig.avatar.startsWith("https") ||
-		profileConfig.avatar.startsWith("data:")
-	);
-	if (isLocal) {
-		const files = import.meta.glob<ImageMetadata>("../../**", {
-			import: "default",
-		});
-		let normalizedPath = path
-			.normalize(path.join("../../", profileConfig.avatar))
-			.replace(/\\/g, "/");
-		const file = files[normalizedPath];
-		if (file) {
-			const img = await file();
-			posterAvatarUrl = img.src;
-		}
-	}
-}
+// 处理头像
+let posterAvatarUrl = profileConfig.avatar || '';
 
 // 判断是否为加密文章
-let isEncrypted = entry.data.encrypted && entry.data.password;
+const isEncrypted = article.encrypted && article.password;
 
+// 获取最后修改时间
 dayjs.extend(utc);
-const lastModified = dayjs(entry.data.updated || entry.data.published)
-	.utc()
-	.format("YYYY-MM-DDTHH:mm:ss");
+const lastModified = dayjs(article.modifiedAt || article.publishedAt || article.createdAt)
+    .utc()
+    .format("YYYY-MM-DDTHH:mm:ss");
 
+// JSON-LD 结构化数据
 const jsonLd = {
-	"@context": "https://schema.org",
-	"@type": "BlogPosting",
-	headline: entry.data.title,
-	description: entry.data.description || entry.data.title,
-	keywords: entry.data.tags,
-	author: {
-		"@type": "Person",
-		name: profileConfig.name,
-		url: Astro.site,
-	},
-	datePublished: formatDateToYYYYMMDD(entry.data.published),
-	inLanguage: entry.data.lang
-		? entry.data.lang.replace("_", "-")
-		: siteConfig.lang.replace("_", "-"),
-	// TODO include cover image here
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: article.title,
+    description: article.excerpt || article.title,
+    keywords: article.tags.map(t => t.name),
+    author: {
+        "@type": "Person",
+        name: profileConfig.name,
+        url: Astro.site,
+    },
+    datePublished: formatDateToYYYYMMDD(article.publishedAt),
+    inLanguage: article.lang
+        ? article.lang.replace("_", "-")
+        : siteConfig.lang.replace("_", "-"),
 };
+
+// 计算字数和阅读时间（中文字符统计，英文按词统计）
+const textContent = article.rawContent.replace(/[#*`\[\]]/g, '');
+// 提取中文字符数量
+const chinesePart = textContent.match(/[\u4e00-\u9fa5]/g) || [];
+const chineseCount = chinesePart.length;
+// 提取英文字符数量（按空格分词）
+const englishPart = textContent.replace(/[\u4e00-\u9fa5]/g, ' ');
+const englishWords = englishPart.split(/\s+/).filter(w => w.length > 0).length;
+const wordCount = chineseCount + englishWords;
+const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
 ---
 
 <MainGridLayout
-    banner={entry.data.image}
-    title={entry.data.title}
-    description={entry.data.description}
-    lang={entry.data.lang}
+    banner={article.cover}
+    title={article.title}
+    description={article.excerpt || ''}
+    lang={article.lang || undefined}
     setOGTypeArticle={true}
-    postSlug={entry.id}
-    headings={headings}
+    postSlug={String(article.id)}
 >
     <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
     <!-- 引入右侧边栏布局管理器 -->
-  <script>
-    import('../../scripts/right-sidebar-layout.js');
-  </script>
+    <script>
+        import('../../scripts/right-sidebar-layout.js');
+    </script>
+
     <div
         class="flex w-full rounded-(--radius-large) overflow-hidden relative mb-4"
     >
@@ -204,7 +136,7 @@ const jsonLd = {
                         <Icon name="material-symbols:notes-rounded" />
                     </div>
                     <div class="text-sm">
-                        {remarkPluginFrontmatter.words}
+                        {wordCount}
                         {" " + i18n(I18nKey.wordsCount)}
                     </div>
                 </div>
@@ -217,11 +149,11 @@ const jsonLd = {
                         />
                     </div>
                     <div class="text-sm">
-                        {remarkPluginFrontmatter.minutes}
+                        {readingMinutes}
                         {
                             " " +
                                 i18n(
-                                    remarkPluginFrontmatter.minutes === 1
+                                    readingMinutes === 1
                                         ? I18nKey.minuteCount
                                         : I18nKey.minutesCount,
                                 )
@@ -242,7 +174,7 @@ const jsonLd = {
                     md:before:w-1 before:h-5 before:rounded-md before:bg-(--primary)
                     before:absolute before:top-3 before:-left-4.5"
                 >
-                    {entry.data.title}
+                    {article.title}
                 </div>
             </div>
 
@@ -250,30 +182,28 @@ const jsonLd = {
             <div class="onload-animation">
                 <PostMetadata
                     className="mb-5"
-                    published={entry.data.published}
-                    updated={entry.data.updated}
-                    tags={entry.data.tags}
-                    category={entry.data.category || undefined}
-                    id={entry.id}
-                    viewsCount={await getViewsCount(entry.id)}
+                    published={article.publishedAt}
+                    updated={article.modifiedAt}
+                    tags={article.tags.map(t => t.name)}
+                    category={article.categories[0]?.name || undefined}
+                    id={String(article.id)}
+                    viewsCount={viewsCount}
                 />
                 {
-                    (!entry.data.image|| (entry.data.image && !siteConfig.showCoverInContent)) && (
+                    (!article.cover || (article.cover && !siteConfig.showCoverInContent)) && (
                         <div class="mt-4 border-(--line-divider) border-dashed border-b mb-5" />
                     )
                 }
             </div>
 
             <!-- always show cover as long as it has one -->
-
             {
-                entry.data.image && siteConfig.showCoverInContent && (
+                article.cover && siteConfig.showCoverInContent && (
                     <>
                         <div class="mt-4" />
                         <ImageWrapper
                             id="post-cover"
-                            src={entry.data.image}
-                            basePath={getFileDirFromPath(entry.filePath || '')}
+                            src={article.cover}
                             class="mb-8 rounded-xl banner-container onload-animation"
                         />
                     </>
@@ -282,15 +212,11 @@ const jsonLd = {
 
             {
                 isEncrypted ? (
-                    <Encryptor password={entry.data.password}>
-                         <Markdown class="mb-6 markdown-content onload-animation">
-                            <Content />
-                        </Markdown>
+                    <Encryptor password={article.password || ''}>
+                        <div class="mb-6 markdown-content onload-animation" set:html={article.content} />
                     </Encryptor>
                 ) : (
-                    <Markdown class="mb-6 markdown-content onload-animation">
-                        <Content />
-                    </Markdown>
+                    <div class="mb-6 markdown-content onload-animation" set:html={article.content} />
                 )
             }
 
@@ -316,10 +242,10 @@ const jsonLd = {
                         <div class="flex items-center gap-3">
                             <SharePoster
                                 client:load
-                                title={entry.data.title}
-                                author={entry.data.author || profileConfig.name}
-                                description={entry.data.description || ""}
-                                pubDate={formatDateToYYYYMMDD(entry.data.published)}
+                                title={article.title}
+                                author={article.authorName || profileConfig.name}
+                                description={article.excerpt || ""}
+                                pubDate={formatDateToYYYYMMDD(article.publishedAt)}
                                 coverImage={posterCoverUrl}
                                 url={Astro.url.toString()}
                                 siteTitle={siteConfig.title}
@@ -333,22 +259,22 @@ const jsonLd = {
             {licenseConfig.enable && (
                 <div id="license-component" class:list={["encrypted-hidden-wrapper", { "encrypted-hidden": isEncrypted }]}>
                     <License
-                    title={entry.data.title}
-                    id={entry.id}
-                    pubDate={entry.data.published}
-                    author={entry.data.author}
-                    sourceLink={entry.data.sourceLink}
-                    licenseName={entry.data.licenseName}
-                    licenseUrl={entry.data.licenseUrl}
-                    class="mb-6 rounded-xl license-container onload-animation"
-                />
+                        title={article.title}
+                        id={String(article.id)}
+                        pubDate={article.publishedAt}
+                        author={article.authorName}
+                        sourceLink={article.sourceLink}
+                        licenseName={article.licenseName}
+                        licenseUrl={article.licenseUrl}
+                        class="mb-6 rounded-xl license-container onload-animation"
+                    />
                 </div>
             )}
         </div>
     </div>
 
     <!-- 评论 -->
-    <Comment post={entry} />
+    <Comment article={article} />
 
     {siteConfig.showLastModified && (
         <>
@@ -369,8 +295,8 @@ const jsonLd = {
                 <script is:inline>
                     function runtime() {
                         const lastModifiedElement = document.getElementById('last-modified');
-                        if (!lastModifiedElement) return;  // 如果元素不存在，直接返回
-                        
+                        if (!lastModifiedElement) return;
+
                         const startDate = new Date(lastModifiedElement.dataset.lastModified);
                         const currentDate = new Date();
                         const diff = currentDate - startDate;
@@ -440,23 +366,23 @@ const jsonLd = {
         class="flex flex-col md:flex-row justify-between mb-4 gap-4 overflow-hidden w-full"
     >
         <a
-            href={entry.data.nextSlug
-                ? getPostUrlBySlug(entry.data.nextSlug)
+            href={article.nextSlug
+                ? getPostUrlBySlug(article.nextSlug)
                 : "#"}
             class:list={[
                 "w-full font-bold overflow-hidden active:scale-95",
-                { "pointer-events-none": !entry.data.nextSlug },
+                { "pointer-events-none": !article.nextSlug },
             ]}
         >
             {
-                entry.data.nextSlug && (
+                article.nextSlug && (
                     <div class="btn-card rounded-2xl w-full h-15 max-w-full px-4 flex items-center justify-start! gap-4">
                         <Icon
                             name="material-symbols:chevron-left-rounded"
                             class="text-[2rem] text-(--primary)"
                         />
                         <div class="overflow-hidden transition text-ellipsis whitespace-nowrap max-w-[calc(100%-3rem)] text-75">
-                            {entry.data.nextTitle}
+                            {article.nextTitle}
                         </div>
                     </div>
                 )
@@ -464,19 +390,19 @@ const jsonLd = {
         </a>
 
         <a
-            href={entry.data.prevSlug
-                ? getPostUrlBySlug(entry.data.prevSlug)
+            href={article.prevSlug
+                ? getPostUrlBySlug(article.prevSlug)
                 : "#"}
             class:list={[
                 "w-full font-bold overflow-hidden active:scale-95",
-                { "pointer-events-none": !entry.data.prevSlug },
+                { "pointer-events-none": !article.prevSlug },
             ]}
         >
             {
-                entry.data.prevSlug && (
+                article.prevSlug && (
                     <div class="btn-card rounded-2xl w-full h-15 max-w-full px-4 flex items-center justify-end! gap-4">
                         <div class="overflow-hidden transition text-ellipsis whitespace-nowrap max-w-[calc(100%-3rem)] text-75">
-                            {entry.data.prevTitle}
+                            {article.prevTitle}
                         </div>
                         <Icon
                             name="material-symbols:chevron-right-rounded"

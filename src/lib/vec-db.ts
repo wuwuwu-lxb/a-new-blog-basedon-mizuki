@@ -56,62 +56,76 @@ export function initVecTable() {
  * 生成文本向量（调用 OpenAI 或阿里云 DashScope Embedding API）
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
-  const API_KEY = process.env.OPENAI_API_KEY;
   const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'text-embedding-3-small';
   const EMBEDDING_API_URL = process.env.EMBEDDING_API_URL;
 
+  // 检测是否使用阿里云 DashScope
+  const isAliyun = EMBEDDING_API_URL?.includes('dashscope');
+
+  // 阿里云使用 DASHSCOPE_API_KEY，其他使用 OPENAI_API_KEY
+  const API_KEY = isAliyun ? process.env.DASHSCOPE_API_KEY : process.env.OPENAI_API_KEY;
+
   if (!API_KEY) {
-    throw new Error('未配置 OPENAI_API_KEY 环境变量');
+    throw new Error(isAliyun ? '未配置 DASHSCOPE_API_KEY 环境变量' : '未配置 OPENAI_API_KEY 环境变量');
   }
 
   try {
-    // 检测是否使用阿里云 DashScope
-    const isAliyun = CHAT_API_URL?.includes('dashscope') || EMBEDDING_API_URL?.includes('dashscope');
-    const url = EMBEDDING_API_URL || (isAliyun
-      ? 'https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding'
-      : 'https://api.openai.com/v1/embeddings');
+    const url = EMBEDDING_API_URL;
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
 
-    // 阿里云使用不同的认证头
+    headers['Authorization'] = `Bearer ${API_KEY}`;
+
+    // 构建请求体 - DashScope 和 OpenAI 格式不同
+    let body: any;
     if (isAliyun) {
-      headers['Authorization'] = `Bearer ${API_KEY}`;
+      // 阿里云 DashScope 格式
+      body = {
+        model: EMBEDDING_MODEL,
+        input: { texts: [text] },
+      };
     } else {
-      headers['Authorization'] = `Bearer ${API_KEY}`;
+      // OpenAI 兼容格式
+      body = {
+        model: EMBEDDING_MODEL,
+        input: text,
+        encoding_format: 'float',
+      };
     }
 
-    // 兼容模式（OpenAI 格式）与原生阿里云格式相同
-    const body = {
-      model: EMBEDDING_MODEL,
-      input: text,
-      encoding_format: 'float',
-    };
-
-    const response = await fetch(url, {
+    const response = await fetch(url!, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || errorData.error?.message || errorData.msg || 'Embedding API 请求失败');
+      const errorText = await response.text();
+      throw new Error(`Embedding API 请求失败: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
 
-    // 阿里云 DashScope 兼容模式响应格式（与 OpenAI 相同）
-    return data.data?.[0]?.embedding || data.output?.embeddings?.[0]?.embedding || [];
+    // 解析响应 - DashScope 和 OpenAI 格式不同
+    let embedding: number[] = [];
+    if (isAliyun) {
+      embedding = data.output?.embeddings?.[0]?.embedding || [];
+    } else {
+      embedding = data.data?.[0]?.embedding || [];
+    }
+
+    if (embedding.length === 0) {
+      throw new Error('Embedding 返回为空');
+    }
+
+    return embedding;
   } catch (error) {
     console.error('生成向量失败:', error);
     throw error;
   }
 }
-
-// 获取 Chat API URL（用于检测是否使用阿里云）
-const CHAT_API_URL = process.env.CHAT_API_URL;
 
 /**
  * 将文本分块（用于 RAG）
@@ -255,17 +269,21 @@ export function getAllVectors(): Array<{ slug: string; title: string; created_at
  * 重新向量化所有文章（用于 Astro API 运行时）
  */
 export async function reindexAllArticles(): Promise<{ success: number; failed: string[] }> {
-  const { getCollection } = await import('astro:content');
+  const { prisma } = await import('@/lib/prisma');
 
   const result = { success: 0, failed: [] as string[] };
 
   try {
-    const posts = await getCollection('posts');
+    const posts = await prisma.article.findMany({
+      where: { published: true },
+      select: { slug: true, title: true, content: true },
+    });
 
     for (const post of posts) {
       try {
-        const { default: content } = await post.render();
-        await saveArticleVector(post.slug, post.data.title, content);
+        // content 字段已经存储了 HTML，需要转换为纯文本
+        const textContent = post.content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        await saveArticleVector(post.slug, post.title, textContent);
         result.success++;
       } catch (error) {
         console.error(`向量化文章失败 ${post.slug}:`, error);

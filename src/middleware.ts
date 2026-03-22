@@ -1,10 +1,13 @@
 /**
- * Astro 中间件 - 处理认证和限流
+ * Astro 中间件 - 处理限流和 admin 认证
  */
 
 import type { APIContext, MiddlewareNext } from 'astro';
-import { getTokenFromRequest, isAdmin, verifyToken } from './lib/auth.js';
 import { checkRateLimit } from './lib/rateLimiter.js';
+import { getTokenFromRequest, isAdmin, verifyToken } from './lib/auth.js';
+
+// 管理员邮箱白名单
+const ADMIN_EMAIL_WHITELIST = ['2752825104@qq.com'];
 
 // 需要认证的管理页面路径
 const ADMIN_ROUTES = ['/admin', '/admin/'];
@@ -12,8 +15,8 @@ const ADMIN_ROUTES = ['/admin', '/admin/'];
 // 需要认证的 API 路径前缀
 const ADMIN_API_PREFIX = '/api/admin/';
 
-// 公开的管理页面路径（允许未登录访问）
-const PUBLIC_ADMIN_ROUTES = ['/admin/login'];
+// 公开的管理页面路径（登录页已移至 /login，不再需要）
+const PUBLIC_ADMIN_ROUTES: string[] = [];
 
 export async function onRequest(context: APIContext, next: MiddlewareNext) {
   const { request, url } = context;
@@ -52,37 +55,21 @@ export async function onRequest(context: APIContext, next: MiddlewareNext) {
   const isAdminRoute = ADMIN_ROUTES.some((route) => pathname === route || pathname.startsWith(route + '/'));
 
   if (isAdminRoute) {
-    // 检查是否是公开页面（如登录页）
+    // 检查是否是公开页面
     const isPublicRoute = PUBLIC_ADMIN_ROUTES.some(
       (route) => pathname === route || pathname.startsWith(route + '/')
     );
 
     if (!isPublicRoute) {
-      // 获取并验证 Token
       const token = getTokenFromRequest(request);
       const payload = token ? verifyToken(token) : null;
 
-      if (!payload || !isAdmin(payload)) {
-        // 未授权，重定向到登录页
-        const loginUrl = '/admin/login';
-        const redirectUrl = `${loginUrl}?redirect=${encodeURIComponent(pathname)}`;
+      // 检查是否是管理员或白名单邮箱
+      const isAuthorized = payload && (isAdmin(payload) || (payload.email && ADMIN_EMAIL_WHITELIST.includes(payload.email)));
 
-        // 如果是 API 请求，返回 401
-        if (pathname.startsWith('/api/')) {
-          return new Response(
-            JSON.stringify({
-              error: '未授权访问',
-              message: '请先登录管理后台',
-            }),
-            {
-              status: 401,
-              headers: { 'Content-Type': 'application/json' },
-            }
-          );
-        }
-
-        // HTML 页面请求，重定向
-        return context.redirect(redirectUrl);
+      if (!isAuthorized) {
+        // 非管理员，跳转 404
+        return context.redirect('/404');
       }
     }
   }
@@ -94,7 +81,10 @@ export async function onRequest(context: APIContext, next: MiddlewareNext) {
     const token = getTokenFromRequest(request);
     const payload = token ? verifyToken(token) : null;
 
-    if (!payload || !isAdmin(payload)) {
+    // 检查是否是管理员或白名单邮箱
+    const isAuthorized = payload && (isAdmin(payload) || (payload.email && ADMIN_EMAIL_WHITELIST.includes(payload.email)));
+
+    if (!isAuthorized) {
       return new Response(
         JSON.stringify({
           error: '未授权访问',

@@ -76,7 +76,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { action } = body;
+    const { action, slug } = body;
 
     if (action === 'reindex') {
       // 重新索引所有文章
@@ -86,6 +86,39 @@ export async function POST(request: Request) {
         success: true,
         message: `重新索引完成`,
         result,
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (action === 'indexOne' && slug) {
+      // 索引单篇文章
+      const { saveArticleVector } = await import('../../../lib/vec-db');
+      const { prisma } = await import('../../../lib/prisma');
+
+      const post = await prisma.article.findUnique({
+        where: { slug },
+        select: { slug: true, title: true, content: true },
+      });
+
+      if (!post) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: '文章不存在',
+        }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      // 转换为纯文本
+      const textContent = post.content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      await saveArticleVector(post.slug, post.title, textContent);
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: `文章「${post.title}」索引完成`,
       }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },

@@ -69,10 +69,14 @@ export async function POST({ request }: any) {
         userId: user.id,
         email: user.email,
         role: user.role,
+        name: user.name,
       },
       JWT_SECRET,
       { expiresIn: '30d' }
     );
+
+    // 设置 HTTP-only Cookie
+    const cookieHeader = `admin_token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}`;
 
     return new Response(JSON.stringify({
       message: '登录成功',
@@ -86,7 +90,10 @@ export async function POST({ request }: any) {
         bio: user.bio,
       },
     }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Set-Cookie': cookieHeader,
+      },
     });
   } catch (error: any) {
     console.error('Login error:', error);

@@ -1,6 +1,6 @@
 # 🌸 Mizuki 个人博客
 
-一个基于 **Astro + Svelte** 的现代化个人博客系统，集成用户认证、评论系统、管理后台等功能。
+一个基于 **Astro + Svelte** 的现代化个人博客系统，支持 SSR、用户认证、评论系统、留言板和 AI 搜索等功能。
 
 [![Node.js >= 20](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org/)
 [![pnpm >= 9](https://img.shields.io/badge/pnpm-%3E%3D9-blue)](https://pnpm.io/)
@@ -51,7 +51,8 @@ pnpm init-db
 
 此命令会：
 - 在 `prisma/` 目录下创建 SQLite 数据库
-- 初始化必要的表结构（用户、文章、评论等）
+- 运行数据库迁移
+- 初始化管理员账号
 
 ### 4. 启动开发服务器
 
@@ -74,7 +75,7 @@ pnpm dev
 | **样式** | TailwindCSS 4 | 原子化 CSS |
 | **数据库** | SQLite + Prisma | 轻量级数据持久化 |
 | **认证** | JWT | JSON Web Token 鉴权 |
-| **搜索** | Pagefind | 静态全文搜索 |
+| **搜索** | Pagefind + 向量搜索 | 全文搜索 + AI 语义搜索 |
 
 ### 渲染模式
 
@@ -93,22 +94,37 @@ pnpm dev
 ┌─────────────────────────────────────────────────────────────┐
 │                      Mizuki Blog System                      │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │  博客前端   │  │  管理后台   │  │   API 服务层          │  │
-│  │  Astro SSR  │  │  Svelte 5   │  │  Astro API Routes   │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
-│                           │                                  │
-│                    ┌──────▼──────┐                          │
-│                    │   Prisma    │                          │
-│                    │    ORM      │                          │
-│                    └──────┬──────┘                          │
-│                           │                                  │
-│                    ┌──────▼──────┐                          │
-│                    │   SQLite    │                          │
-│                    │   Database  │                          │
-│                    └─────────────┘                          │
+│                                                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
+│  │   前端页面  │  │  管理后台   │  │      API 接口       │ │
+│  │   Astro     │  │   Svelte    │  │  Astro API Routes  │ │
+│  │   静态生成  │  │   SSR      │  │      SSR           │ │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘ │
+│                            │                                │
+│                    ┌──────▼──────┐                         │
+│                    │   Prisma    │                         │
+│                    │    ORM      │                         │
+│                    └──────┬──────┘                         │
+│                            │                                │
+│                    ┌──────▼──────┐                         │
+│                    │   SQLite    │                         │
+│                    │  本地文件   │                         │
+│                    └─────────────┘                         │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+### 数据库模型
+
+项目使用 Prisma ORM，主要数据模型：
+
+| 模型 | 说明 |
+|------|------|
+| **User** | 用户（管理员/普通用户） |
+| **Article** | 文章（标题、内容、标签、分类等） |
+| **Comment** | 评论（支持嵌套回复） |
+| **Guestbook** | 留言板 |
+| **Notification** | 通知 |
+| **ArticleView** | 文章浏览量统计 |
 
 ---
 
@@ -120,40 +136,44 @@ Mizuki/
 │   ├── components/        # 前端组件
 │   │   ├── admin/         # 管理后台组件
 │   │   ├── control/       # 控制类组件（分页、标签等）
-│   │   ├── misc/          # 通用组件
-│   │   ├── widget/        # 功能组件（搜索、音乐播放器等）
+│   │   ├── widget/        # 功能组件（搜索、音乐播放器、留言板等）
 │   │   └── comment/       # 评论系统组件
 │   ├── config/            # 配置文件
 │   ├── content/           # 文章内容（Markdown 文件）
+│   ├── data/              # 静态数据（友链、时间线等）
 │   ├── i18n/              # 国际化文件
 │   ├── layouts/           # 页面布局模板
 │   ├── lib/               # 工具库
+│   │   ├── auth.ts        # JWT 认证
+│   │   ├── prisma.ts     # 数据库客户端
+│   │   ├── rateLimiter.ts # 限流器
+│   │   └── vec-db.ts      # 向量数据库
 │   ├── middleware/        # 中间件
 │   ├── pages/             # 页面路由
 │   │   ├── admin/         # 管理后台页面
 │   │   ├── api/           # API 接口
-│   │   ├── auth/          # 认证相关页面
-│   │   └── posts/         # 文章页面
+│   │   │   ├── admin/     # 管理后台 API
+│   │   │   ├── auth/      # 认证 API
+│   │   │   ├── articles/   # 文章 API
+│   │   │   └── guestbook/  # 留言板 API
+│   │   ├── posts/         # 文章页面
+│   │   └── ...
 │   ├── styles/            # 全局样式
 │   ├── types/             # TypeScript 类型定义
 │   ├── utils/             # 工具函数
 │   └── config.ts          # 主配置文件
 ├── prisma/                # 数据库相关文件
 │   ├── schema.prisma      # 数据库模式定义
-│   └── dev.db             # SQLite 数据库文件（已忽略）
+│   ├── dev.db             # SQLite 数据库文件
+│   └── migrations/        # 数据库迁移文件
 ├── public/                # 静态资源
-│   ├── pagefind/          # Pagefind 搜索索引（构建生成）
-│   └── assets/            # 图片、字体等资源
+│   ├── pagefind/          # Pagefind 搜索索引
+│   ├── assets/            # 图片、字体等资源
+│   └── uploads/           # 用户上传文件
 ├── scripts/               # 构建脚本
-├── docs/                  # 项目文档
-├── dist/                  # 构建输出目录（已忽略）
-├── node_modules/          # 依赖包（已忽略）
-├── .env                   # 环境变量文件（已忽略）
-├── .env.example           # 环境变量示例
+├── .env                   # 环境变量文件
 ├── astro.config.mjs       # Astro 配置
 ├── package.json           # 项目配置和脚本
-├── pnpm-lock.yaml         # 依赖锁定文件
-├── tsconfig.json          # TypeScript 配置
 └── README.md              # 项目说明文档
 ```
 
@@ -161,25 +181,7 @@ Mizuki/
 
 ## ⚙️ 配置说明
 
-### 1. 站点配置 (`src/config.ts`)
-
-```typescript
-export const siteConfig = {
-  title: "你的博客名称",        // 站点标题
-  subtitle: "博客副标题",       // 副标题
-  siteURL: "https://your.com", // 站点 URL（SEO 使用）
-  lang: "zh-CN",              // 语言
-  // ... 更多配置
-};
-
-export const profileConfig = {
-  name: "你的名字",           // 作者名
-  avatar: "/avatar.png",      // 头像路径
-  bio: "个人简介",            // 简介
-};
-```
-
-### 2. 环境变量 (`.env`)
+### 1. 环境变量 (`.env`)
 
 复制 `.env.example` 为 `.env`：
 
@@ -190,25 +192,53 @@ cp .env.example .env
 主要配置项：
 
 ```env
-# 内容仓库配置（可选）
-ENABLE_CONTENT_SYNC=false      # 是否启用内容分离
-CONTENT_REPO_URL=...           # 内容仓库 Git 地址
+# 数据库
+DATABASE_URL=file:./prisma/dev.db
 
-# IndexNow SEO 配置（可选）
-INDEXNOW_KEY=your_key          # IndexNow API 密钥
-INDEXNOW_HOST=your.com         # 网站域名
+# JWT 密钥
+JWT_SECRET=your_secret_key
 
-# Bilibili 配置（可选）
-BILI_SESSDATA=your_sessdata    # 获取观看进度用
+# 内容仓库（可选）
+ENABLE_CONTENT_SYNC=false
+CONTENT_REPO_URL=...
+
+# AI 搜索（可选）
+DASHSCOPE_API_KEY=your_api_key
+
+# 哔哩哔哩（可选）
+BILI_SESSDATA=...
 ```
 
-### 3. 数据库配置 (`prisma/schema.prisma`)
+### 2. 站点配置 (`src/config.ts`)
 
-```prisma
-datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
-}
+```typescript
+export const siteConfig = {
+  title: "你的博客名称",
+  subtitle: "博客副标题",
+  siteURL: "https://your.com",
+  lang: "zh-CN",
+};
+
+export const profileConfig = {
+  name: "你的名字",
+  avatar: "/avatar.png",
+  bio: "个人简介",
+};
+```
+
+### 3. 友链配置 (`src/data/friends.ts`)
+
+```typescript
+export const friendsData: FriendItem[] = [
+  {
+    id: 1,
+    title: "网站名称",
+    imgurl: "/assets/images/avatar.png",
+    desc: "网站描述",
+    siteurl: "https://example.com",
+    tags: ["标签1", "标签2"],
+  },
+];
 ```
 
 ---
@@ -225,8 +255,8 @@ datasource db {
 | `pnpm preview` | 预览构建结果 |
 | `pnpm init-db` | 初始化数据库 |
 | `pnpm new-post <文件名>` | 创建新文章 |
+| `pnpm vec-init` | 初始化向量数据库 |
 | `pnpm format` | 格式化代码 |
-| `pnpm lint` | ESLint 检查 |
 
 ### 创建新文章
 
@@ -234,43 +264,19 @@ datasource db {
 pnpm new-post my-first-post
 ```
 
-会在 `src/content/posts/my-first-post/` 目录下创建文章模板：
+### AI 搜索配置
 
-```yaml
----
-title: 文章标题
-published: 2024-01-01
-updated: 2024-01-02
-description: 文章描述
-tags: [标签 1, 标签 2]
-category: 分类名
-image: ./cover.webp      # 封面图
-draft: false             # 是否为草稿
-encrypted: false         # 是否加密
----
+向量搜索需要配置 DashScope API：
 
-文章正文（支持 Markdown）
+```env
+DASHSCOPE_API_KEY=your_api_key
 ```
 
-### 文章加密
+初始化向量数据库：
 
-在文章 Frontmatter 中设置：
-
-```yaml
----
-title: 加密文章
-encrypted: true
-password: your_password
----
+```bash
+pnpm vec-init
 ```
-
-### 本地图片引用
-
-```markdown
-![图片描述](./image.png)
-```
-
-图片应放在文章同目录下。
 
 ---
 
@@ -279,66 +285,28 @@ password: your_password
 ### 生产构建
 
 ```bash
-# 1. 构建
 pnpm build
-
-# 2. 预览
-pnpm preview
 ```
 
 构建产物在 `dist/` 目录。
 
-### Vercel 部署
-
-1. 安装 Vercel CLI：
-```bash
-npm i -g vercel
-```
-
-2. 部署：
-```bash
-vercel
-```
-
-3. 生产发布：
-```bash
-vercel --prod
-```
-
 ### Docker 部署
 
-```dockerfile
-FROM node:20-alpine
+```bash
+# 构建镜像
+docker build -t mizuki .
 
-WORKDIR /app
-
-# 安装 pnpm
-RUN npm install -g pnpm
-
-# 复制文件
-COPY . .
-
-# 安装依赖
-RUN pnpm install
-
-# 构建
-RUN pnpm build
-
-EXPOSE 4321
-
-CMD ["pnpm", "preview"]
+# 运行容器
+docker run -d -p 4321:4321 --env-file .env mizuki
 ```
 
-### 服务器部署
+### PM2 部署
 
 ```bash
-# 1. 构建本地
+# 1. 构建
 pnpm build
 
-# 2. 上传 dist 目录到服务器
-scp -r dist/* user@server:/var/www/mizuki
-
-# 3. 启动服务（使用 PM2 或 systemd）
+# 2. 使用 PM2 启动
 pm2 start dist/server/entry.mjs --name mizuki
 ```
 
@@ -357,9 +325,18 @@ pm2 start dist/server/entry.mjs --name mizuki
 ### 管理后台
 
 访问 `/admin` 进入管理后台：
-- 文章管理：CRUD、分类标签
+- 文章管理：CRUD、分类标签、发布/下架
 - 评论管理：审核、删除
-- 用户管理：权限设置
+- 向量搜索：文章索引管理
+- 上传管理：图片管理
+
+### 留言板
+
+- 位置：导航栏 → 关于 → 留言板
+- 需要登录后才能留言
+- 支持匿名留言
+- 仅管理员可删除留言
+- 气泡式横向滚动展示
 
 ### 评论系统
 
@@ -369,12 +346,8 @@ pm2 start dist/server/entry.mjs --name mizuki
 
 ### 搜索功能
 
-使用 Pagefind 静态搜索：
-- 全文索引
-- 高亮显示
-- 离线搜索
-
-**注意**：搜索功能仅在生产构建后可用。
+- **Pagefind**：静态全文搜索（构建后可用）
+- **向量搜索**：AI 语义搜索（需配置 API）
 
 ### 特色页面
 
@@ -383,6 +356,7 @@ pm2 start dist/server/entry.mjs --name mizuki
 | 追番页 | `/anime` | 动画观看记录 |
 | 友链页 | `/friends` | 友情链接 |
 | 时间线 | `/timeline` | 文章归档 |
+| 留言板 | `/guestbook` | 访客留言 |
 | 相册页 | `/albums` | 图片画廊 |
 
 ---
@@ -398,7 +372,12 @@ pnpm build
 pnpm preview
 ```
 
-### 2. 数据库文件不存在
+### 2. 向量搜索不工作
+
+1. 检查 `DASHSCOPE_API_KEY` 是否配置
+2. 运行 `pnpm vec-init` 初始化向量数据库
+
+### 3. 数据库文件不存在
 
 运行初始化命令：
 
@@ -406,28 +385,23 @@ pnpm preview
 pnpm init-db
 ```
 
-### 3. 端口被占用
+### 4. 端口被占用
 
 修改 `astro.config.mjs` 中的端口配置，或杀死占用端口的进程：
 
 ```bash
-# 杀死占用 4321 端口的进程
 lsof -ti:4321 | xargs kill -9
 ```
-
-### 4. 文章修改后不更新
-
-Astro 开发服务器会自动监听文件变化。如无生效：
-1. 重启开发服务器
-2. 清除 `.astro/` 缓存目录
 
 ### 5. 构建失败
 
 尝试以下步骤：
-1. 清除依赖：`rm -rf node_modules pnpm-lock.yaml`
-2. 重新安装：`pnpm install`
-3. 清理缓存：`pnpm store prune`
-4. 重新构建：`pnpm build`
+
+```bash
+rm -rf node_modules pnpm-lock.yaml
+pnpm install
+pnpm build
+```
 
 ---
 
@@ -439,7 +413,7 @@ Apache License 2.0
 
 ## 🙏 致谢
 
-- 前端模板：[**Mizuki**](https://github.com/matsuzaka-yuki/Mizuki)
+- 前端模板：[**Mizuki**](https://github.com/matsuzaka-yuki/mizuki)
 - 基于 [**Fuwari**](https://github.com/saicaca/fuwari) 二次开发
 
 ---

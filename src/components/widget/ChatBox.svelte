@@ -20,7 +20,7 @@
 	let autoScroll = $state(true);
 
 	// 系统提示词配置
-	let systemPrompt = $state("你是一个友好、博学的助手，名字叫小晤。请用简洁、温暖的语气回答问题。");
+	let systemPrompt = $state("你是一个友好、博学的助手，名字叫小唔。请用简洁、温暖的语气回答问题。");
 	let apiEndpoint = $state("/api/chat");
 
 	// localStorage 键
@@ -216,7 +216,7 @@
 				<Icon icon="material-symbols:chat" class="text-white text-xl" />
 			</div>
 			<div>
-				<div class="font-semibold text-90">小晤 Chat</div>
+				<div class="font-semibold text-90">小唔 Chat</div>
 				<div class="text-xs text-50 flex items-center gap-1">
 					<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
 					在线
@@ -255,7 +255,7 @@
 		{#if messages.length === 0}
 			<div class="empty-state flex flex-col items-center justify-center h-full text-50">
 				<Icon icon="material-symbols:chat-outline" class="text-6xl mb-3" />
-				<p class="text-lg">开始和小晤聊天吧~</p>
+				<p class="text-lg">开始和小唔聊天吧~</p>
 				<p class="text-sm mt-2">问问关于这个网站或者技术问题</p>
 			</div>
 		{:else}

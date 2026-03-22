@@ -2,11 +2,17 @@
 import Icon from "@iconify/svelte";
 import { onDestroy, onMount } from "svelte";
 
+// 聊天模式
+type ChatMode = "chat" | "recommend";
+
 // Pio 实例引用
 let pioInstance: any = null;
 
 // 聊天状态
 let isLoading = $state(false);
+
+// 当前模式
+let chatMode = $state<ChatMode>("chat");
 
 // 消息列表
 interface Article {
@@ -30,7 +36,7 @@ let userInput = $state("");
 let messagesContainer: HTMLDivElement;
 
 // 系统提示词配置
-let systemPrompt = $state("你是一个友好、博学的助手，名字叫小晤。请用简洁、温暖的语气回答问题。");
+let systemPrompt = $state("你是一个友好、博学的助手，名字叫小唔。请用简洁、温暖的语气回答问题。");
 let apiEndpoint = $state("/api/chat");
 
 // localStorage 键
@@ -39,7 +45,7 @@ const STORAGE_KEY_SYSTEM_PROMPT = "chat-page-system-prompt";
 
 // 默认配置
 const DEFAULT_CONFIG = {
-	systemPrompt: "你是一个友好、博学的助手，名字叫小晤。请用简洁、温暖的语气回答问题。",
+	systemPrompt: "你是一个友好、博学的助手，名字叫小唔。请用简洁、温暖的语气回答问题。",
 	apiEndpoint: "/api/chat",
 };
 
@@ -95,6 +101,25 @@ function scrollToBottom() {
 	}
 }
 
+// 搜索文章（用于推荐模式）
+async function searchArticles(query: string): Promise<Article[]> {
+	try {
+		const response = await fetch(`/api/search-articles?q=${encodeURIComponent(query)}&limit=5`);
+		if (response.ok) {
+			const data = await response.json();
+			return (data.results || []).map((item: any) => ({
+				slug: item.slug,
+				title: item.title,
+				description: item.description || '',
+				url: item.url,
+			}));
+		}
+	} catch (error) {
+		console.error("Search articles error:", error);
+	}
+	return [];
+}
+
 // 发送消息
 async function sendMessage() {
 	if (!userInput.trim() || isLoading) return;
@@ -112,8 +137,14 @@ async function sendMessage() {
 	saveMessages();
 	scrollToBottom();
 
-	// 通过看板娘显示"思考中"状态
-	showPioMessage("让我想想...", 2000);
+	// 如果是推荐模式，先搜索文章
+	let recommendedArticles: Article[] = [];
+	if (chatMode === "recommend") {
+		recommendedArticles = await searchArticles(userMessage.content);
+		showPioMessage("正在搜索相关文章...", 1500);
+	} else {
+		showPioMessage("让我想想...", 2000);
+	}
 
 	try {
 		const response = await fetch(apiEndpoint, {
@@ -135,12 +166,16 @@ async function sendMessage() {
 		if (!response.ok) throw new Error("API 请求失败");
 
 		const data = await response.json();
+
+		// 推荐模式显示搜索到的文章，聊天模式不显示文章
+		const articles = chatMode === "recommend" ? recommendedArticles : [];
+
 		const assistantMessage: Message = {
 			id: Date.now() + 1,
 			role: "assistant",
 			content: data.content || data.message || data.response || "抱歉，我没有理解你的问题。",
 			timestamp: new Date(),
-			articles: data.articles || [],
+			articles,
 		};
 
 		messages.push(assistantMessage);
@@ -229,7 +264,11 @@ onMount(() => {
 		pioInstance = window.pioInstance;
 		// 欢迎消息
 		setTimeout(() => {
-			showPioMessage("你好呀！我是小晤，有什么可以帮你的吗？~", 3000);
+			if (chatMode === "chat") {
+				showPioMessage("你好呀！我是小唔，有什么可以帮你的吗？~", 3000);
+			} else {
+				showPioMessage("输入关键词，我来帮你搜索相关文章~", 3000);
+			}
 		}, 500);
 	}
 });
@@ -245,10 +284,16 @@ onDestroy(() => {
 		{#if messages.length === 0}
 			<!-- 空状态提示 -->
 			<div class="empty-state flex flex-col items-center justify-center h-full text-center py-12">
-				<div class="text-6xl mb-4">👋</div>
-				<h3 class="text-lg font-semibold text-90 mb-2">你好呀！</h3>
-				<p class="text-50 text-sm">我是小晤，有什么可以帮你的吗？</p>
-				<p class="text-40 text-xs mt-4">我可以帮你搜索和推荐博客文章哦～</p>
+				<div class="text-6xl mb-4">{chatMode === "chat" ? "👋" : "📚"}</div>
+				<h3 class="text-lg font-semibold text-90 mb-2">
+					{chatMode === "chat" ? "你好呀！" : "文章搜索"}
+				</h3>
+				<p class="text-50 text-sm">
+					{chatMode === "chat" ? "我是小唔，有什么可以帮你的吗？" : "输入关键词搜索相关文章"}
+				</p>
+				<p class="text-40 text-xs mt-4">
+					{chatMode === "chat" ? "我可以帮你搜索和推荐博客文章哦～" : "选择「聊天」模式可以和我对话哦"}
+				</p>
 			</div>
 		{:else}
 			<!-- 消息列表 -->
@@ -273,7 +318,7 @@ onDestroy(() => {
 							<div class="message-header flex items-center gap-2 mb-1">
 								<span class="sender-name text-sm font-medium text-90">
 									{#if message.role === 'assistant'}
-										小晤
+										小唔
 									{:else}
 										你
 									{/if}
@@ -314,7 +359,7 @@ onDestroy(() => {
 						</div>
 						<div class="message-content flex-1 min-w-0">
 							<div class="message-header flex items-center gap-2 mb-1">
-								<span class="sender-name text-sm font-medium text-90">小晤</span>
+								<span class="sender-name text-sm font-medium text-90">小唔</span>
 							</div>
 							<div class="message-body card-base px-4 py-3 rounded-xl">
 								<div class="flex items-center gap-2 text-50">
@@ -331,11 +376,33 @@ onDestroy(() => {
 
 	<!-- 输入框区域 -->
 	<div class="chat-input-wrapper card-base p-4 rounded-xl">
+		<!-- 模式选择器 -->
+		<div class="mode-selector flex gap-2 mb-3">
+			<button
+				class="mode-btn flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2"
+				class:mode-active={chatMode === "chat"}
+				class:mode-inactive={chatMode !== "chat"}
+				on:click={() => chatMode = "chat"}
+			>
+				<Icon icon="material-symbols:chat-outline" class="w-4 h-4" />
+				聊天
+			</button>
+			<button
+				class="mode-btn flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2"
+				class:mode-active={chatMode === "recommend"}
+				class:mode-inactive={chatMode !== "recommend"}
+				on:click={() => chatMode = "recommend"}
+			>
+				<Icon icon="material-symbols:menu-book-outline" class="w-4 h-4" />
+				文章推荐
+			</button>
+		</div>
+
 		<div class="flex gap-2">
 			<textarea
 				bind:value={userInput}
 				on:keydown={handleKeydown}
-				placeholder="输入消息... (Enter 发送，Shift+Enter 换行)"
+				placeholder={chatMode === "chat" ? "输入消息... (Enter 发送，Shift+Enter 换行)" : "输入关键词搜索相关文章... (Enter 发送)"}
 				class="flex-1 resize-none bg-(--btn-regular-bg) rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-(--primary) max-h-24 overflow-y-auto"
 				rows="2"
 				disabled={isLoading}
@@ -373,6 +440,32 @@ onDestroy(() => {
 <style>
 .chat-page-container {
 	min-height: 400px;
+}
+
+/* 模式选择器样式 */
+.mode-selector {
+	background: var(--btn-regular-bg);
+	border-radius: 0.75rem;
+	padding: 0.25rem;
+}
+
+.mode-btn {
+	border: none;
+	cursor: pointer;
+}
+
+.mode-active {
+	background: var(--primary);
+	color: white;
+}
+
+.mode-inactive {
+	background: transparent;
+	color: var(--text-50);
+}
+
+.mode-inactive:hover {
+	color: var(--text-90);
 }
 
 .chat-input-wrapper {

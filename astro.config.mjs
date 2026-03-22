@@ -45,21 +45,21 @@ export default defineConfig({
 			shareUrl: false,
 		}),
 		swup({
-			theme: false,
-			animationClass: "transition-swup-",
+			theme: 'fade',
+			animationClass: "transition-",
 			containers: ["main"],
-			smoothScrolling: false, // 禁用平滑滚动以提升性能，避免与锚点导航冲突
-			cache: true,
-			preload: true, // swup 默认鼠标悬停预加载
+			smoothScrolling: false,
+			cache: false,
+			preload: false,
+			preloadTimeout: 0,
 			accessibility: true,
-			updateHead: true,
+			updateHead: false,
 			updateBodyClass: false,
 			globalInstance: true,
-			// 滚动相关配置优化
+			debug: true,
 			resolveUrl: (url) => url,
 			animateHistoryBrowsing: false,
 			skipPopStateHandling: (event) => {
-				// 跳过锚点链接的处理，让浏览器原生处理
 				return (
 					event.state &&
 					event.state.url &&
@@ -179,18 +179,6 @@ export default defineConfig({
 	},
 	vite: {
 		plugins: [tailwindcss()],
-		server: {
-			// 开发环境下代理 API 请求到 Next.js 服务
-			// 注意：Astro 自己的 API 路由 (src/pages/api/) 会自动处理，不需要代理
-			// 只有明确指定的 API 路径才代理到 Next.js
-			proxy: {
-				// 只代理特定的 API 路径到 Next.js
-				'/api/v1': {
-					target: 'http://localhost:3001',
-					changeOrigin: true,
-				},
-			},
-		},
 		build: {
 			// 静态资源处理优化，防止小图片转 base64 导致 HTML 体积过大（可选，根据需要调整）
 			assetsInlineLimit: 4096,

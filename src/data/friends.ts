@@ -20,6 +20,22 @@ export const friendsData: FriendItem[] = [
 		siteurl: "https://fsteinsgate.cn/",
 		tags: ["网安"],
 	},
+	{
+		id: 2,
+		title: "linermao",
+		imgurl: "/assets/images/linermao.png",
+		desc: "大手子",
+		siteurl: "https://linermao.github.io/",
+		tags: ["大手子"],
+	},
+	{
+		id: 3,
+		title: "Mizuki",
+		imgurl: "/assets/images/mizuki.png",
+		desc: "网页前端的二改来源",
+		siteurl: "https://github.com/matsuzaka-yuki/mizuki",
+		tags: ["友链"],
+	},
 ];
 
 // 获取所有友情链接数据

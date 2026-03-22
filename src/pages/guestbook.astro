@@ -1,0 +1,10 @@
+---
+import Guestbook from "@components/widget/Guestbook.svelte";
+import MainGridLayout from "../layouts/MainGridLayout.astro";
+
+const title = "留言板";
+const description = "在这里留下你的足迹";
+---
+<MainGridLayout title={title} description={description}>
+    <Guestbook client:load />
+</MainGridLayout>

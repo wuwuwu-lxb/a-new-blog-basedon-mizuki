@@ -1,8 +1,7 @@
-import type { CollectionEntry } from "astro:content";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import { permalinkConfig } from "../config";
-import { generatePermalinkSlug } from "./permalink-utils";
+import { generatePermalinkSlug, hasCustomPermalink } from "./permalink-utils";
 
 /**
  * 移除文件扩展名（.md, .mdx, .markdown）
@@ -35,15 +34,17 @@ export function getPostUrlByAlias(alias: string): string {
 	return url(`/posts/${cleanAlias}/`);
 }
 
-export function getPostUrl(post: CollectionEntry<"posts">): string;
+// 支持数据库文章和 Content Collection 文章
 export function getPostUrl(post: {
-	id: string;
-	data: { alias?: string; permalink?: string };
-}): string;
-export function getPostUrl(post: any): string {
+	slug: string;
+	publishedAt?: Date | null;
+	categories?: Array<{ name: string }>;
+	alias?: string | null;
+	permalink?: string | null;
+}): string {
 	// 如果文章有自定义 permalink，优先使用（在根目录下）
-	if (post.data.permalink) {
-		const slug = post.data.permalink
+	if (hasCustomPermalink(post)) {
+		const slug = post.permalink!
 			.replace(/^\/+/, "")
 			.replace(/\/+$/, "");
 		return url(`/${slug}/`);
@@ -56,12 +57,12 @@ export function getPostUrl(post: any): string {
 	}
 
 	// 如果文章有 alias，使用 alias（在 /posts/ 下）
-	if (post.data.alias) {
-		return getPostUrlByAlias(post.data.alias);
+	if (post.alias) {
+		return getPostUrlByAlias(post.alias);
 	}
 
 	// 否则使用默认的 slug 路径
-	return getPostUrlBySlug(post.id);
+	return getPostUrlBySlug(post.slug);
 }
 
 export function getTagUrl(tag: string): string {

@@ -7,7 +7,7 @@ import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 
-export async function POST(request: Request) {
+export async function POST({ request }: { request: Request }) {
   try {
     const formData = await request.formData();
     const file = formData.get('image') as File;

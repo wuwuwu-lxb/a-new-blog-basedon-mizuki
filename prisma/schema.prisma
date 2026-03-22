@@ -1,4 +1,4 @@
-// Prisma Schema for 小晤 Blog API
+// Prisma Schema for Mizuki Blog API
 // https://www.prisma.io/docs/concepts/components/prisma-schema
 
 generator client {
@@ -24,6 +24,8 @@ model User {
 
   articles Article[]
   comments Comment[]
+  notifications Notification[]
+  notificationsFrom Notification[] @relation("NotificationFromUser")
 
   @@map("users")
 }
@@ -39,7 +41,8 @@ model Article {
   id          Int      @id @default(autoincrement())
   title       String
   slug        String   @unique
-  content     String
+  content     String   // 预渲染的 HTML 内容
+  rawContent  String   // 原始 Markdown（编辑时用）
   excerpt     String?
   cover       String?
   published   Boolean  @default(false)
@@ -54,8 +57,50 @@ model Article {
   tags       Tag[]
   categories Category[]
   comments   Comment[]
+  vectors    ArticleVector[]
+
+  // 扩展字段（对应 Markdown frontmatter）
+  draft        Boolean   @default(false)       // draft: z.boolean()
+  modifiedAt   DateTime?                     // frontmatter updated date
+  lang         String?                       // lang: z.string()
+  pinned       Boolean   @default(false)       // pinned: z.boolean()
+  comment      Boolean   @default(true)        // comment: z.boolean()
+  priority     Int?                          // priority: z.number()
+  authorName   String?                        // author: z.string()
+  sourceLink   String?                        // sourceLink: z.string()
+  licenseName  String?                       // licenseName: z.string()
+  licenseUrl   String?                       // licenseUrl: z.string()
+
+  // 加密字段
+  encrypted    Boolean   @default(false)       // encrypted: z.boolean()
+  password     String?                        // password: z.string()
+
+  // 自定义链接
+  permalink    String?                        // permalink: z.string()
+  alias        String?                        // alias: z.string()
+
+  // 上一篇/下一篇链接
+  prevSlug     String?
+  prevTitle    String?
+  nextSlug     String?
+  nextTitle    String?
+
+  // 序号（用于固定链接）
+  numericId    Int?
 
   @@map("articles")
+}
+
+// 文章向量模型（用于 RAG 搜索）
+model ArticleVector {
+  id            Int      @id @default(autoincrement())
+  articleId     Int
+  article       Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  contentChunk  String   // 文本块内容
+  embedding     Bytes    // 向量数据 (BLOB)
+  createdAt     DateTime @default(now())
+
+  @@map("article_vectors")
 }
 
 // 分类模型
@@ -109,6 +154,9 @@ model Comment {
   parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies  Comment[] @relation("CommentReplies")
 
+  // 通知关联
+  notifications Notification[]
+
   @@unique([articleId, articleSlug]) // 确保每篇文章只有一个评论线程
   @@map("comments")
 }
@@ -152,4 +200,32 @@ enum MessageRole {
   USER
   ASSISTANT
   SYSTEM
+}
+
+// 通知模型
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // 'comment_reply', 'comment_like', etc.
+  content   String
+  isRead    Boolean  @default(false)
+  fromUserId Int?
+  fromUser  User?    @relation("NotificationFromUser", fields: [fromUserId], references: [id], onDelete: SetNull)
+  commentId Int?
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+// 留言板模型
+model Guestbook {
+  id        Int      @id @default(autoincrement())
+  nickname  String
+  content   String
+  userId    String?  // 可能是游客，留空或存用户ID
+  createdAt DateTime @default(now())
+
+  @@map("guestbook")
 }

@@ -55,9 +55,8 @@ export async function POST({ request }: any) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // 创建用户（第一个注册用户自动成为管理员）
-    const userCount = await prisma.user.count();
-    const role = userCount === 0 ? 'ADMIN' : 'USER';
+    // 创建用户（默认普通用户，需要管理员手动升级）
+    const role = 'USER';
 
     const user = await prisma.user.create({
       data: {

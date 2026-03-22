@@ -117,6 +117,31 @@
     }
   }
 
+  async function handleIndexArticle(article: Article) {
+    try {
+      const res = await fetch('/api/admin/vector-search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'indexOne',
+          slug: article.slug,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        alert(data.message || '索引成功');
+      } else {
+        const data = await res.json();
+        alert(`索引失败：${data.error}`);
+      }
+    } catch (err) {
+      alert('索引失败：网络错误');
+    }
+  }
+
   async function handleImageUpload(event: Event) {
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
@@ -260,6 +285,12 @@
                     {article.published ? '下架' : '发布'}
                   </button>
                   <button
+                    class="btn btn-sm btn-index"
+                    on:click={() => handleIndexArticle(article)}
+                  >
+                    索引
+                  </button>
+                  <button
                     class="btn btn-sm btn-danger"
                     on:click={() => handleDelete(article.slug)}
                   >
@@ -365,6 +396,11 @@
 
   .btn-warning {
     background: #f59e0b;
+    color: white;
+  }
+
+  .btn-index {
+    background: #8b5cf6;
     color: white;
   }
 

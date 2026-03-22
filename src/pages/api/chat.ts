@@ -4,7 +4,7 @@
  */
 
 import type { APIRoute } from "astro";
-import { getCollection } from "astro:content";
+import { getSortedPosts } from "@utils/content-utils";
 import { initVecTable, searchVectors } from "../../lib/vec-db";
 
 // 配置
@@ -55,16 +55,16 @@ async function searchArticles(query: string, limit: number = 3) {
 
   // 回退到关键词搜索
   try {
-    const posts = await getCollection('posts', ({ data }) => !data.draft);
+    const posts = await getSortedPosts();
 
     const searchTerms = query.toLowerCase().split(/\s+/).filter(Boolean);
 
     const results = posts
       .filter((post) => {
-        const title = post.data.title?.toLowerCase() || '';
-        const tags = (post.data.tags || []).map(tag => tag.toLowerCase());
-        const category = (post.data.category || '').toLowerCase();
-        const description = (post.data.description || '').toLowerCase();
+        const title = post.title?.toLowerCase() || '';
+        const tags = (post.tags || []).map(tag => tag.name.toLowerCase());
+        const category = (post.categories[0]?.name || '').toLowerCase();
+        const description = (post.excerpt || '').toLowerCase();
         const slug = post.slug.toLowerCase();
 
         return searchTerms.some(term =>
@@ -78,8 +78,8 @@ async function searchArticles(query: string, limit: number = 3) {
       .slice(0, limit)
       .map((post) => ({
         slug: post.slug,
-        title: post.data.title,
-        description: post.data.description || '',
+        title: post.title,
+        description: post.excerpt || '',
         url: `/posts/${post.slug}`,
       }));
 
@@ -190,7 +190,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // 构建系统提示词（包含文章推荐）
-    const baseSystemPrompt = systemMessage?.content || "你是一个友好、博学的助手，名字叫小晤。请用简洁、温暖的语气回答问题。";
+    const baseSystemPrompt = systemMessage?.content || "你是一个友好、博学的助手，名字叫小唔。请用简洁、温暖的语气回答问题。";
     const enhancedSystemPrompt = buildSystemPrompt(baseSystemPrompt, articles);
 
     // 格式化消息

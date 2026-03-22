@@ -10,7 +10,7 @@ import type { SearchResult } from "@/global";
 let keywordDesktop = $state("");
 let keywordMobile = $state("");
 let result: SearchResult[] = $state([]);
-let pagefindLoaded = false;
+let searchLoaded = $state(false);
 let initialized = $state(false);
 let isDesktopSearchExpanded = $state(false);
 let debounceTimer: NodeJS.Timeout;
@@ -89,17 +89,17 @@ const search = async (keyword: string, isDesktop: boolean): Promise<void> => {
 		return;
 	}
 	try {
-		let searchResults: SearchResult[] = [];
-		if (pagefindLoaded && window.pagefind) {
-			const response = await window.pagefind.search(keyword);
-			searchResults = await Promise.all(
-				response.results.map((item) => item.data()),
-			);
+		const response = await fetch(`/api/search-articles?q=${encodeURIComponent(keyword)}&limit=10`);
+		if (response.ok) {
+			const data = await response.json();
+			result = (data.results || []).map((item: any) => ({
+				url: item.url,
+				meta: { title: item.title },
+				excerpt: item.description || '',
+			}));
 		} else {
-			// Pagefind not loaded yet, show empty results
-			searchResults = [];
+			result = [];
 		}
-		result = searchResults;
 		setPanelVisibility(result.length > 0, isDesktop);
 	} catch (error) {
 		console.error("Search error:", error);
@@ -109,32 +109,8 @@ const search = async (keyword: string, isDesktop: boolean): Promise<void> => {
 };
 
 onMount(() => {
-	const initializeSearch = () => {
-		initialized = true;
-		pagefindLoaded =
-			typeof window !== "undefined" &&
-			!!window.pagefind &&
-			typeof window.pagefind.search === "function";
-		console.log("Pagefind status on init:", pagefindLoaded);
-	};
-
-	document.addEventListener("pagefindready", () => {
-		console.log("Pagefind ready event received.");
-		initializeSearch();
-	});
-	document.addEventListener("pagefindloaderror", () => {
-		console.warn(
-			"Pagefind load error event received. Search functionality will be limited.",
-		);
-		initializeSearch(); // Initialize with pagefindLoaded as false
-	});
-	// Fallback in case events are not caught or pagefind is already loaded by the time this script runs
-	setTimeout(() => {
-		if (!initialized) {
-			console.log("Fallback: Initializing search after timeout.");
-			initializeSearch();
-		}
-	}, 2000);
+	initialized = true;
+	searchLoaded = true;
 
 	// 监听窗口焦点事件，防止切换窗口时自动展开搜索框
 	const handleFocus = () => {

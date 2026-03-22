@@ -15,6 +15,20 @@
   let error = '';
   let uploading = false;
 
+  // 扩展字段
+  let pinned = false;
+  let priority: number | null = null;
+  let encrypted = false;
+  let password = '';
+  let permalink = '';
+  let alias = '';
+  let lang = '';
+  let comment = true;
+  let authorName = '';
+  let sourceLink = '';
+  let licenseName = '';
+  let licenseUrl = '';
+
   onMount(async () => {
     // 设置默认发布日期为今天
     published = new Date().toISOString().split('T')[0];
@@ -48,6 +62,7 @@
       const res = await fetch('/api/admin/upload', {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       });
 
       if (res.ok) {
@@ -98,6 +113,19 @@
           draft,
           published,
           views,
+          // 扩展字段
+          pinned,
+          priority,
+          encrypted,
+          password: encrypted ? password : null,
+          permalink: permalink || null,
+          alias: alias || null,
+          lang: lang || null,
+          comment,
+          authorName: authorName || null,
+          sourceLink: sourceLink || null,
+          licenseName: licenseName || null,
+          licenseUrl: licenseUrl || null,
         }),
       });
 
@@ -138,15 +166,25 @@
       />
     </div>
 
-    <div class="form-group">
-      <label>Slug *</label>
-      <input
-        type="text"
-        bind:value={slug}
-        placeholder="article-slug"
-        required
-      />
-      <p class="form-hint">文章的唯一标识，将作为文件夹名称</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Slug *</label>
+        <input
+          type="text"
+          bind:value={slug}
+          placeholder="article-slug"
+          required
+        />
+        <p class="form-hint">文章的唯一标识</p>
+      </div>
+      <div class="form-group">
+        <label>自定义链接</label>
+        <input
+          type="text"
+          bind:value={permalink}
+          placeholder="/custom-permalink"
+        />
+      </div>
     </div>
 
     <div class="form-group">
@@ -197,6 +235,26 @@
       </div>
     </div>
 
+    <div class="form-row">
+      <div class="form-group">
+        <label>语言</label>
+        <input
+          type="text"
+          bind:value={lang}
+          placeholder="zh_CN / en / ja ..."
+        />
+      </div>
+      <div class="form-group">
+        <label>优先级</label>
+        <input
+          type="number"
+          bind:value={priority}
+          min="0"
+          placeholder="数字越小越靠前"
+        />
+      </div>
+    </div>
+
     <div class="form-group">
       <label>封面图</label>
       <div class="image-input-wrapper">
@@ -222,6 +280,101 @@
         <img src={image} alt="封面预览" />
       </div>
     {/if}
+
+    <details class="accordion">
+      <summary>⚙️ 高级设置</summary>
+      <div class="accordion-content">
+        <div class="form-row">
+          <div class="form-group">
+            <label>作者名称</label>
+            <input
+              type="text"
+              bind:value={authorName}
+              placeholder="作者名称"
+            />
+          </div>
+          <div class="form-group">
+            <label>原文链接</label>
+            <input
+              type="text"
+              bind:value={sourceLink}
+              placeholder="https://..."
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>许可证名称</label>
+            <input
+              type="text"
+              bind:value={licenseName}
+              placeholder="CC BY-NC-SA 4.0"
+            />
+          </div>
+          <div class="form-group">
+            <label>许可证链接</label>
+            <input
+              type="text"
+              bind:value={licenseUrl}
+              placeholder="https://..."
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>别名</label>
+          <input
+            type="text"
+            bind:value={alias}
+            placeholder="article-alias"
+          />
+          <p class="form-hint">用于 SEO 和快捷访问</p>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" bind:checked={comment} />
+            <span>开启评论</span>
+          </label>
+        </div>
+      </div>
+    </details>
+
+    <details class="accordion">
+      <summary>🔒 文章加密</summary>
+      <div class="accordion-content">
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" bind:checked={encrypted} />
+            <span>启用加密</span>
+          </label>
+        </div>
+
+        {#if encrypted}
+          <div class="form-group">
+            <label>访问密码</label>
+            <input
+              type="password"
+              bind:value={password}
+              placeholder="输入访问密码"
+            />
+          </div>
+        {/if}
+      </div>
+    </details>
+
+    <details class="accordion">
+      <summary>📌 置顶设置</summary>
+      <div class="accordion-content">
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" bind:checked={pinned} />
+            <span>置顶文章</span>
+          </label>
+        </div>
+      </div>
+    </details>
 
     <div class="form-group">
       <label>内容 *</label>
@@ -415,6 +568,31 @@
   .checkbox-label input {
     width: 1.125rem;
     height: 1.125rem;
+  }
+
+  .accordion {
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+
+  .accordion summary {
+    padding: 1rem;
+    background: var(--bg);
+    cursor: pointer;
+    font-weight: 500;
+    user-select: none;
+  }
+
+  .accordion summary:hover {
+    background: var(--btn-plain-bg-hover);
+  }
+
+  .accordion-content {
+    padding: 1rem;
+    background: var(--card-bg);
+    border-top: 1px solid var(--border-color);
   }
 
   .form-actions {
