@@ -201,16 +201,6 @@ pm2 startup
 pm2 save
 ```
 
-### 方式三：Docker
-
-```bash
-# 构建镜像
-docker build -t mizuki .
-
-# 运行容器
-docker run -d -p 4321:4321 --env-file .env mizuki
-```
-
 ---
 
 ## 🔐 管理后台
