@@ -87,7 +87,7 @@
 		"sharp": "^0.34.5",
 		"sqlite-vec": "^0.1.7",
 		"stylus": "^0.64.0",
-		"svelte": "^5.53.6",
+		"svelte": "^5.55.1",
 		"tailwindcss": "^4.2.1",
 		"typescript": "^5.9.3",
 		"unist-util-visit": "^5.1.0"
